@@ -1,6 +1,9 @@
 # isu-strategis-permasalahan-opd-service
 Service isu strategis permasalahan opd
 
+# SPEC
+[spec](SPEC.md)
+
 *update checklist setiap progress
 
 # Checklist
