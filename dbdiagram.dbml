@@ -1,0 +1,59 @@
+Table isu_strategis_opd {
+    id integer [pk, increment, unique]
+    tahun varchar
+    kode_opd varchar
+    kode_bidang_urusan varchar
+    nama_bidang_urusan varchar
+    isu_strategis varchar
+    created_date timestamp [default: `now()`]
+    last_modified_date timestamp [default: `now()`]
+}
+
+Table permasalahan_opd {
+    id integer [pk, increment, unique]
+    id_pokin integer [null]
+    pokin varchar [null]
+    tahun varchar
+    kode_opd varchar
+    masalah varchar
+    keterangan varchar [null]
+    jenis_masalah jenis_masalah
+    is_terpilih boolean [default: false]
+    created_date timestamp [default: `now()`]
+    last_modified_date timestamp [default: `now()`]
+}
+
+Table permasalahan_terpilih {
+    id integer [pk, increment, unique]
+    id_isu_strategis_opd integer [ref: > isu_strategis_opd.id, null]
+    id_permasalahan_opd integer [ref: - permasalahan_opd.id, not null, unique]
+    tahun varchar
+    kode_opd varchar
+    created_date timestamp [default: `now()`]
+    last_modified_date timestamp [default: `now()`]
+}
+
+Table data_dukung {
+    id integer [pk, increment, unique]
+    id_permasalahan_opd integer [ref: > permasalahan_opd.id, not null]
+    nama_data_dukung varchar
+    narasi_data_dukung varchar
+    created_date timestamp [default: `now()`]
+    last_modified_date timestamp [default: `now()`]
+}
+
+Table jumlah_data {
+    id integer [pk, increment, unique]
+    id_data_dukung integer [ref: > data_dukung.id, not null]
+    tahun varchar
+    jumlah double
+    satuan varchar
+    created_date timestamp [default: `now()`]
+    last_modified_date timestamp [default: `now()`]
+}
+
+Enum jenis_masalah {
+    MASALAH_POKOK
+    MASALAH
+    AKAR_MASALAH
+}
