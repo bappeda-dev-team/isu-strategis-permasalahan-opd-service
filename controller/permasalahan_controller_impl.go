@@ -16,6 +16,17 @@ func NewPermasalahanControllerImpl(permasalahanService service.PermasalahanServi
 	return &PermasalahanControllerImpl{permasalahanService: permasalahanService}
 }
 
+// Create godoc
+// @Summary Create Permasalahan
+// @Description Create a new permasalahan
+// @Tags Permasalahan Service
+// @Accept json
+// @Produce json
+// @Param permasalahan body web.PermasalahanCreateRequest true "Create Permasalahan"
+// @Success 200 {object} web.WebResponse
+// @Failure 400 {object} web.WebResponse
+// @Failure 500 {object} web.WebResponse
+// @Router /permasalahan [post]
 func (controller *PermasalahanControllerImpl) Create(c echo.Context) error {
 	request := web.PermasalahanCreateRequest{}
 	err := c.Bind(&request)
@@ -43,6 +54,18 @@ func (controller *PermasalahanControllerImpl) Create(c echo.Context) error {
 	})
 }
 
+// Update godoc
+// @Summary Update Permasalahan
+// @Description Update a permasalahan
+// @Tags Permasalahan Service
+// @Accept json
+// @Produce json
+// @Param id path string true "Permasalahan ID"
+// @Param permasalahan body web.PermasalahanUpdateRequest true "Update Permasalahan"
+// @Success 200 {object} web.WebResponse
+// @Failure 400 {object} web.WebResponse
+// @Failure 500 {object} web.WebResponse
+// @Router /permasalahan/{id} [put]
 func (controller *PermasalahanControllerImpl) Update(c echo.Context) error {
 
 	request := web.PermasalahanUpdateRequest{}
@@ -71,6 +94,17 @@ func (controller *PermasalahanControllerImpl) Update(c echo.Context) error {
 	})
 }
 
+// Delete godoc
+// @Summary Delete Permasalahan
+// @Description Delete an existing permasalahan
+// @Tags Permasalahan Service
+// @Accept json
+// @Produce json
+// @Param id path string true "Permasalahan ID"
+// @Success 200 {object} web.WebResponse
+// @Failure 400 {object} web.WebResponse
+// @Failure 500 {object} web.WebResponse
+// @Router /permasalahan/{id} [delete]
 func (controller *PermasalahanControllerImpl) Delete(c echo.Context) error {
 	id := c.Param("id")
 
@@ -90,6 +124,17 @@ func (controller *PermasalahanControllerImpl) Delete(c echo.Context) error {
 	})
 }
 
+// FindById godoc
+// @Summary FindById Permasalahan
+// @Description FindById an existing permasalahan
+// @Tags Permasalahan Service
+// @Param id path int true "Permasalahan ID"
+// @Accept json
+// @Produce json
+// @Success 200 {object} web.WebResponse
+// @Failure 400 {object} web.WebResponse
+// @Failure 500 {object} web.WebResponse
+// @Router /permasalahan/{id} [get]
 func (controller *PermasalahanControllerImpl) FindById(c echo.Context) error {
 	id := c.Param("id")
 
@@ -109,18 +154,18 @@ func (controller *PermasalahanControllerImpl) FindById(c echo.Context) error {
 	})
 }
 
-// FindAllPohonKinerja godoc
-// @Summary Get All Pohon Kinerja with Permasalahan
-// @Description Get all pohon kinerja and merge with permasalahan data
-// @Tags GET Pohon Kinerja
-// @Accept json
-// @Produce json
+// FindAll godoc
+// @Summary FindAll Permasalahan
+// @Description FindAll an existing permasalahan
+// @Tags Permasalahan Service
 // @Param kode_opd path string true "Kode OPD"
 // @Param tahun path string true "Tahun"
+// @Accept json
+// @Produce json
 // @Success 200 {object} web.WebResponse
 // @Failure 400 {object} web.WebResponse
 // @Failure 500 {object} web.WebResponse
-// @Router /pohon_kinerja_opd/findall/{kode_opd}/{tahun} [get]
+// @Router /permasalahan/{kode_opd}/{tahun} [get]
 func (controller *PermasalahanControllerImpl) FindAllPohonKinerja(c echo.Context) error {
 	kodeOpd := c.Param("kode_opd")
 	tahun := c.Param("tahun")

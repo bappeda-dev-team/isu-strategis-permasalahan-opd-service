@@ -6,20 +6,20 @@ type PohonKinerjaResponse struct {
 	Data   PohonKinerjaDataResponse `json:"data"`
 }
 
+// @Description Response Permasalahan OPD
 type PohonKinerjaDataResponse struct {
-	KodeOpd string `json:"kode_opd"`
-	NamaOpd string `json:"nama_opd"`
-	Tahun   string `json:"tahun"`
-	// TujuanOpd []TujuanOpdResponse `json:"tujuan_opd"`
-	Childs []ChildResponse `json:"childs"`
+	KodeOpd string          `json:"kode_opd"`
+	NamaOpd string          `json:"nama_opd"`
+	Tahun   string          `json:"tahun"`
+	Childs  []ChildResponse `json:"childs"`
 }
 
-type TujuanOpdResponse struct {
-	Id        int                 `json:"id"`
-	KodeOpd   string              `json:"kode_opd"`
-	Tujuan    string              `json:"tujuan"`
-	Indikator []IndikatorResponse `json:"indikator"`
-}
+// type TujuanOpdResponse struct {
+// 	Id        int                 `json:"id"`
+// 	KodeOpd   string              `json:"kode_opd"`
+// 	Tujuan    string              `json:"tujuan"`
+// 	Indikator []IndikatorResponse `json:"indikator"`
+// }
 
 type IndikatorResponse struct {
 	Indikator string           `json:"indikator"`

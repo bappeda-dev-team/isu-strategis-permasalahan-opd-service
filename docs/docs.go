@@ -24,9 +24,9 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/pohon_kinerja_opd/findall/{kode_opd}/{tahun}": {
-            "get": {
-                "description": "Get all pohon kinerja and merge with permasalahan data",
+        "/permasalahan": {
+            "post": {
+                "description": "Create a new permasalahan",
                 "consumes": [
                     "application/json"
                 ],
@@ -34,9 +34,192 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "GET Pohon Kinerja"
+                    "Permasalahan Service"
                 ],
-                "summary": "Get All Pohon Kinerja with Permasalahan",
+                "summary": "Create Permasalahan",
+                "parameters": [
+                    {
+                        "description": "Create Permasalahan",
+                        "name": "permasalahan",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/web.PermasalahanCreateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/web.WebResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/web.WebResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/web.WebResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/permasalahan/{id}": {
+            "get": {
+                "description": "FindById an existing permasalahan",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Permasalahan Service"
+                ],
+                "summary": "FindById Permasalahan",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Permasalahan ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/web.WebResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/web.WebResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/web.WebResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "Update a permasalahan",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Permasalahan Service"
+                ],
+                "summary": "Update Permasalahan",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Permasalahan ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Update Permasalahan",
+                        "name": "permasalahan",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/web.PermasalahanUpdateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/web.WebResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/web.WebResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/web.WebResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Delete an existing permasalahan",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Permasalahan Service"
+                ],
+                "summary": "Delete Permasalahan",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Permasalahan ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/web.WebResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/web.WebResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/web.WebResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/permasalahan/{kode_opd}/{tahun}": {
+            "get": {
+                "description": "FindAll an existing permasalahan",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Permasalahan Service"
+                ],
+                "summary": "FindAll Permasalahan",
                 "parameters": [
                     {
                         "type": "string",
@@ -77,6 +260,73 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "web.PermasalahanCreateRequest": {
+            "description": "Request Permasalahan Create",
+            "type": "object",
+            "required": [
+                "jenis_masalah",
+                "kode_opd",
+                "level_pohon",
+                "nama_opd",
+                "permasalahan",
+                "pokin_id",
+                "tahun"
+            ],
+            "properties": {
+                "jenis_masalah": {
+                    "type": "string"
+                },
+                "kode_opd": {
+                    "type": "string"
+                },
+                "level_pohon": {
+                    "type": "integer"
+                },
+                "nama_opd": {
+                    "type": "string"
+                },
+                "permasalahan": {
+                    "type": "string"
+                },
+                "pokin_id": {
+                    "type": "integer"
+                },
+                "tahun": {
+                    "type": "string"
+                }
+            }
+        },
+        "web.PermasalahanUpdateRequest": {
+            "description": "Update Request Permasalahan",
+            "type": "object",
+            "required": [
+                "kode_opd",
+                "level_pohon",
+                "nama_opd",
+                "permasalahan",
+                "tahun"
+            ],
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "kode_opd": {
+                    "type": "string"
+                },
+                "level_pohon": {
+                    "type": "integer"
+                },
+                "nama_opd": {
+                    "type": "string"
+                },
+                "permasalahan": {
+                    "type": "string"
+                },
+                "tahun": {
+                    "type": "string"
+                }
+            }
+        },
         "web.WebResponse": {
             "description": "Web Response",
             "type": "object",
@@ -96,11 +346,11 @@ const docTemplate = `{
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
-	Host:             "localhost:8002",
+	Host:             "${HOST}:${PORT}",
 	BasePath:         "/",
-	Schemes:          []string{"http"},
-	Title:            "Permasalahan Service API",
-	Description:      "API For Master Permasalahan Services",
+	Schemes:          []string{},
+	Title:            "Permasalahan & Isu Strategis Service API",
+	Description:      "API For Permasalahan & Isu Strategis Services",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

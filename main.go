@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"os"
 	"permasalahanService/app"
-	_ "permasalahanService/docs"
+	"permasalahanService/docs"
+
 	"permasalahanService/helper"
 
 	"github.com/labstack/echo/v4"
@@ -14,9 +15,9 @@ func NewServer(e *echo.Echo) *echo.Echo {
 	return e
 }
 
-// @title Permasalahan Service API
+// @title Permasalahan & Isu Strategis Service API
 // @version 1.0
-// @description API For Master Permasalahan Services
+// @description API For Permasalahan & Isu Strategis Services
 // @termsOfService http://swagger.io/terms/
 
 // @contact.name API Support
@@ -26,9 +27,8 @@ func NewServer(e *echo.Echo) *echo.Echo {
 // @license.name Apache 2.0
 // @license.url http://www.apache.org/licenses/LICENSE-2.0.html
 
-// @host localhost:8002
+// @host ${HOST}:${PORT}
 // @BasePath /
-// @schemes http
 
 func main() {
 
@@ -37,6 +37,8 @@ func main() {
 	server := InitializedServer()
 	host := os.Getenv("host")
 	port := os.Getenv("port")
+
+	docs.SwaggerInfo.Host = fmt.Sprintf("%s:%s", host, port)
 
 	addr := fmt.Sprintf("%s:%s", host, port)
 

@@ -34,6 +34,12 @@ func (service *PermasalahanServiceImpl) Create(ctx context.Context, request web.
 	}
 	defer helper.CommitOrRollback(tx)
 
+	// Validasi jenis masalah
+	jenisMasalah := domain.JenisMasalah(request.JenisMasalah)
+	if !jenisMasalah.IsValid() {
+		return web.ChildResponse{}, errors.New("jenis masalah tidak valid. Pilihan yang tersedia: MASALAH_POKOK, MASALAH, AKAR_MASALAH")
+	}
+
 	existingPermasalahan, err := service.permasalahanRepository.FindByPokinId(ctx, tx, request.PokinId)
 	if err != nil {
 		return web.ChildResponse{}, err
@@ -41,6 +47,7 @@ func (service *PermasalahanServiceImpl) Create(ctx context.Context, request web.
 	if existingPermasalahan.Id != 0 {
 		return web.ChildResponse{}, errors.New("pokin_id sudah digunakan")
 	}
+
 	permasalahan := domain.Permasalahan{
 		PokinId:      request.PokinId,
 		Permasalahan: request.Permasalahan,
@@ -48,7 +55,7 @@ func (service *PermasalahanServiceImpl) Create(ctx context.Context, request web.
 		KodeOpd:      request.KodeOpd,
 		NamaOpd:      request.NamaOpd,
 		Tahun:        request.Tahun,
-		JenisMasalah: request.JenisMasalah,
+		JenisMasalah: string(jenisMasalah),
 	}
 
 	permasalahan, err = service.permasalahanRepository.Create(ctx, tx, permasalahan)

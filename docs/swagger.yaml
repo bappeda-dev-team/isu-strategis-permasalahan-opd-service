@@ -1,5 +1,53 @@
 basePath: /
 definitions:
+  web.PermasalahanCreateRequest:
+    description: Request Permasalahan Create
+    properties:
+      jenis_masalah:
+        type: string
+      kode_opd:
+        type: string
+      level_pohon:
+        type: integer
+      nama_opd:
+        type: string
+      permasalahan:
+        type: string
+      pokin_id:
+        type: integer
+      tahun:
+        type: string
+    required:
+    - jenis_masalah
+    - kode_opd
+    - level_pohon
+    - nama_opd
+    - permasalahan
+    - pokin_id
+    - tahun
+    type: object
+  web.PermasalahanUpdateRequest:
+    description: Update Request Permasalahan
+    properties:
+      id:
+        type: integer
+      kode_opd:
+        type: string
+      level_pohon:
+        type: integer
+      nama_opd:
+        type: string
+      permasalahan:
+        type: string
+      tahun:
+        type: string
+    required:
+    - kode_opd
+    - level_pohon
+    - nama_opd
+    - permasalahan
+    - tahun
+    type: object
   web.WebResponse:
     description: Web Response
     properties:
@@ -9,25 +57,146 @@ definitions:
       status:
         type: string
     type: object
-host: localhost:8002
+host: ${HOST}:${PORT}
 info:
   contact:
     email: support@swagger.io
     name: API Support
     url: http://www.swagger.io/support
-  description: API For Master Permasalahan Services
+  description: API For Permasalahan & Isu Strategis Services
   license:
     name: Apache 2.0
     url: http://www.apache.org/licenses/LICENSE-2.0.html
   termsOfService: http://swagger.io/terms/
-  title: Permasalahan Service API
+  title: Permasalahan & Isu Strategis Service API
   version: "1.0"
 paths:
-  /pohon_kinerja_opd/findall/{kode_opd}/{tahun}:
+  /permasalahan:
+    post:
+      consumes:
+      - application/json
+      description: Create a new permasalahan
+      parameters:
+      - description: Create Permasalahan
+        in: body
+        name: permasalahan
+        required: true
+        schema:
+          $ref: '#/definitions/web.PermasalahanCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/web.WebResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/web.WebResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/web.WebResponse'
+      summary: Create Permasalahan
+      tags:
+      - Permasalahan Service
+  /permasalahan/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete an existing permasalahan
+      parameters:
+      - description: Permasalahan ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/web.WebResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/web.WebResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/web.WebResponse'
+      summary: Delete Permasalahan
+      tags:
+      - Permasalahan Service
     get:
       consumes:
       - application/json
-      description: Get all pohon kinerja and merge with permasalahan data
+      description: FindById an existing permasalahan
+      parameters:
+      - description: Permasalahan ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/web.WebResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/web.WebResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/web.WebResponse'
+      summary: FindById Permasalahan
+      tags:
+      - Permasalahan Service
+    put:
+      consumes:
+      - application/json
+      description: Update a permasalahan
+      parameters:
+      - description: Permasalahan ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Update Permasalahan
+        in: body
+        name: permasalahan
+        required: true
+        schema:
+          $ref: '#/definitions/web.PermasalahanUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/web.WebResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/web.WebResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/web.WebResponse'
+      summary: Update Permasalahan
+      tags:
+      - Permasalahan Service
+  /permasalahan/{kode_opd}/{tahun}:
+    get:
+      consumes:
+      - application/json
+      description: FindAll an existing permasalahan
       parameters:
       - description: Kode OPD
         in: path
@@ -54,9 +223,7 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/web.WebResponse'
-      summary: Get All Pohon Kinerja with Permasalahan
+      summary: FindAll Permasalahan
       tags:
-      - GET Pohon Kinerja
-schemes:
-- http
+      - Permasalahan Service
 swagger: "2.0"

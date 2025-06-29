@@ -1,5 +1,6 @@
 package web
 
+// @Description Request Permasalahan Create
 type PermasalahanCreateRequest struct {
 	PokinId      int    `json:"pokin_id" validate:"required"`
 	Permasalahan string `json:"permasalahan" validate:"required"`
