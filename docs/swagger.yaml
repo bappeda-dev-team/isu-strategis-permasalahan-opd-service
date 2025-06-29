@@ -1,0 +1,62 @@
+basePath: /
+definitions:
+  web.WebResponse:
+    description: Web Response
+    properties:
+      code:
+        type: integer
+      data: {}
+      status:
+        type: string
+    type: object
+host: localhost:8002
+info:
+  contact:
+    email: support@swagger.io
+    name: API Support
+    url: http://www.swagger.io/support
+  description: API For Master Permasalahan Services
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: Permasalahan Service API
+  version: "1.0"
+paths:
+  /pohon_kinerja_opd/findall/{kode_opd}/{tahun}:
+    get:
+      consumes:
+      - application/json
+      description: Get all pohon kinerja and merge with permasalahan data
+      parameters:
+      - description: Kode OPD
+        in: path
+        name: kode_opd
+        required: true
+        type: string
+      - description: Tahun
+        in: path
+        name: tahun
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/web.WebResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/web.WebResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/web.WebResponse'
+      summary: Get All Pohon Kinerja with Permasalahan
+      tags:
+      - GET Pohon Kinerja
+schemes:
+- http
+swagger: "2.0"
