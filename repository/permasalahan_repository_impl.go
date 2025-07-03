@@ -174,7 +174,7 @@ func (repository *PermasalahanRepositoryImpl) MergePohonKinerjaWithPermasalahan(
 		}
 
 		// Filter berdasarkan status
-		if node.Status == "menunggu_disetujui" || node.Status == "crosscutting_disetujui" {
+		if node.Status == "menunggu_disetujui" {
 			return nil
 		}
 

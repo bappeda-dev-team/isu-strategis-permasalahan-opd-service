@@ -130,19 +130,19 @@ func (service *PermasalahanServiceImpl) Delete(ctx context.Context, id string) e
 	return nil
 }
 
-func (service *PermasalahanServiceImpl) FindById(ctx context.Context, id string) (web.ChildResponse, error) {
+func (service *PermasalahanServiceImpl) FindById(ctx context.Context, id string) (web.PermasalahanResponsesbyId, error) {
 	tx, err := service.db.Begin()
 	if err != nil {
-		return web.ChildResponse{}, err
+		return web.PermasalahanResponsesbyId{}, err
 	}
 	defer helper.CommitOrRollback(tx)
 
 	permasalahan, err := service.permasalahanRepository.FindById(ctx, tx, id)
 	if err != nil {
-		return web.ChildResponse{}, err
+		return web.PermasalahanResponsesbyId{}, err
 	}
 
-	permasalahanResponse := web.ChildResponse{
+	permasalahanResponse := web.PermasalahanResponsesbyId{
 		Id:         permasalahan.Id,
 		NamaPohon:  permasalahan.Permasalahan,
 		LevelPohon: permasalahan.LevelPohon,

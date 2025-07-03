@@ -131,7 +131,7 @@ func (controller *PermasalahanControllerImpl) Delete(c echo.Context) error {
 // @Param id path int true "Permasalahan ID"
 // @Accept json
 // @Produce json
-// @Success 200 {object} web.WebResponse
+// @Success 200 {object} web.WebResponse{data=web.PermasalahanResponsesbyId}
 // @Failure 400 {object} web.WebResponse
 // @Failure 500 {object} web.WebResponse
 // @Router /permasalahan/{id} [get]
@@ -162,7 +162,7 @@ func (controller *PermasalahanControllerImpl) FindById(c echo.Context) error {
 // @Param tahun path string true "Tahun"
 // @Accept json
 // @Produce json
-// @Success 200 {object} web.WebResponse
+// @Success 200 {object} web.WebResponse{data=web.ChildResponse}
 // @Failure 400 {object} web.WebResponse
 // @Failure 500 {object} web.WebResponse
 // @Router /permasalahan/{kode_opd}/{tahun} [get]
