@@ -1,5 +1,6 @@
 package web
 
+// @Description Request Isu Strategis Create
 type IsuStrategisCreateRequest struct {
 	Id               int                      `json:"id"`
 	KodeOpd          string                   `json:"kode_opd" validate:"required"`

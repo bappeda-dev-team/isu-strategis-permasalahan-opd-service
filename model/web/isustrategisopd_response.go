@@ -2,6 +2,7 @@ package web
 
 import "time"
 
+// @Description Response Isu Strategis
 type IsuStrategisResponse struct {
 	Id               int                    `json:"id"`
 	KodeOpd          string                 `json:"kode_opd"`

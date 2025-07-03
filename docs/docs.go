@@ -24,6 +24,217 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/isu_strategis": {
+            "post": {
+                "description": "Create a new isu strategis",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Isu Strategis Service"
+                ],
+                "summary": "Create Isu Strategis",
+                "parameters": [
+                    {
+                        "description": "Create Isu Strategis",
+                        "name": "isu_strategis",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/web.IsuStrategisCreateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/web.WebResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/web.WebResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/web.WebResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/isu_strategis/{id}": {
+            "get": {
+                "description": "FindById a isu strategis",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Isu Strategis Service"
+                ],
+                "summary": "FindById Isu Strategis",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Isu Strategis ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/web.WebResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/web.WebResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/web.WebResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "Update a isu strategis",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Isu Strategis Service"
+                ],
+                "summary": "Update Isu Strategis",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Isu Strategis ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Update Isu Strategis",
+                        "name": "isu_strategis",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/web.IsuStrategisUpdateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/web.WebResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/web.WebResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/web.WebResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/isu_strategis/{kode_opd}/{tahun_awal}/{tahun_akhir}": {
+            "get": {
+                "description": "FindAll a isu strategis",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Isu Strategis Service"
+                ],
+                "summary": "FindAll Isu Strategis",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Kode OPD",
+                        "name": "kode_opd",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Tahun Awal",
+                        "name": "tahun_awal",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Tahun Akhir",
+                        "name": "tahun_akhir",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/web.WebResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/web.IsuStrategisResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/web.WebResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/web.WebResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/permasalahan": {
             "post": {
                 "description": "Create a new permasalahan",
@@ -96,7 +307,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/web.WebResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/web.WebResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/web.PermasalahanResponsesbyId"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
@@ -240,7 +463,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/web.WebResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/web.WebResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/web.ChildResponse"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
@@ -260,6 +495,315 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "web.ChildResponse": {
+            "type": "object",
+            "properties": {
+                "childs": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/web.ChildResponse"
+                    }
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "id_permasalahan": {
+                    "type": "integer"
+                },
+                "is_permasalahan": {
+                    "type": "boolean"
+                },
+                "jenis_masalah": {
+                    "type": "string"
+                },
+                "level_pohon": {
+                    "type": "integer"
+                },
+                "nama_pohon": {
+                    "type": "string"
+                },
+                "parent": {
+                    "type": "integer"
+                },
+                "perangkat_daerah": {
+                    "$ref": "#/definitions/web.PerangkatDaerah"
+                },
+                "permasalahan_terpilih": {
+                    "type": "boolean"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "web.DataDukungRequest": {
+            "type": "object",
+            "required": [
+                "data_dukung",
+                "narasi_data_dukung"
+            ],
+            "properties": {
+                "data_dukung": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "jumlah_data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/web.JumlahDataRequest"
+                    }
+                },
+                "narasi_data_dukung": {
+                    "type": "string"
+                },
+                "permasalahan_opd_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "web.DataDukungResponse": {
+            "type": "object",
+            "properties": {
+                "data_dukung": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "jumlah_data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/web.JumlahDataResponse"
+                    }
+                },
+                "narasi_data_dukung": {
+                    "type": "string"
+                },
+                "permasalahan_opd_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "web.DataDukungUpdateRequest": {
+            "type": "object",
+            "properties": {
+                "data_dukung": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "jumlah_data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/web.JumlahDataUpdateRequest"
+                    }
+                },
+                "narasi_data_dukung": {
+                    "type": "string"
+                }
+            }
+        },
+        "web.IsuStrategisCreateRequest": {
+            "description": "Request Isu Strategis Create",
+            "type": "object",
+            "required": [
+                "isu_strategis",
+                "kode_bidang_urusan",
+                "kode_opd",
+                "nama_bidang_urusan",
+                "nama_opd",
+                "tahun_akhir",
+                "tahun_awal"
+            ],
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "isu_strategis": {
+                    "type": "string"
+                },
+                "kode_bidang_urusan": {
+                    "type": "string"
+                },
+                "kode_opd": {
+                    "type": "string"
+                },
+                "nama_bidang_urusan": {
+                    "type": "string"
+                },
+                "nama_opd": {
+                    "type": "string"
+                },
+                "permasalahan_opd": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/web.PermasalahanOpdRequest"
+                    }
+                },
+                "tahun_akhir": {
+                    "type": "string"
+                },
+                "tahun_awal": {
+                    "type": "string"
+                }
+            }
+        },
+        "web.IsuStrategisResponse": {
+            "description": "Response Isu Strategis",
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "isu_strategis": {
+                    "type": "string"
+                },
+                "kode_bidang_urusan": {
+                    "type": "string"
+                },
+                "kode_opd": {
+                    "type": "string"
+                },
+                "nama_bidang_urusan": {
+                    "type": "string"
+                },
+                "nama_opd": {
+                    "type": "string"
+                },
+                "permasalahan_opd": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/web.PermasalahanResponse"
+                    }
+                },
+                "tahun_akhir": {
+                    "type": "string"
+                },
+                "tahun_awal": {
+                    "type": "string"
+                }
+            }
+        },
+        "web.IsuStrategisUpdateRequest": {
+            "description": "Request Isu Strategis Update",
+            "type": "object",
+            "required": [
+                "id",
+                "isu_strategis",
+                "kode_bidang_urusan",
+                "kode_opd",
+                "nama_bidang_urusan",
+                "nama_opd",
+                "tahun_akhir",
+                "tahun_awal"
+            ],
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "isu_strategis": {
+                    "type": "string"
+                },
+                "kode_bidang_urusan": {
+                    "type": "string"
+                },
+                "kode_opd": {
+                    "type": "string"
+                },
+                "nama_bidang_urusan": {
+                    "type": "string"
+                },
+                "nama_opd": {
+                    "type": "string"
+                },
+                "permasalahan_opd": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/web.PermasalahanIsuStrategisUpdateRequest"
+                    }
+                },
+                "tahun_akhir": {
+                    "type": "string"
+                },
+                "tahun_awal": {
+                    "type": "string"
+                }
+            }
+        },
+        "web.JumlahDataRequest": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "id_data_dukung": {
+                    "type": "integer"
+                },
+                "jumlah_data": {
+                    "type": "number"
+                },
+                "satuan": {
+                    "type": "string"
+                },
+                "tahun": {
+                    "type": "string"
+                }
+            }
+        },
+        "web.JumlahDataResponse": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "id_data_dukung": {
+                    "type": "integer"
+                },
+                "jumlah_data": {
+                    "type": "number"
+                },
+                "satuan": {
+                    "type": "string"
+                },
+                "tahun": {
+                    "type": "string"
+                }
+            }
+        },
+        "web.JumlahDataUpdateRequest": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "jumlah_data": {
+                    "type": "number"
+                },
+                "satuan": {
+                    "type": "string"
+                },
+                "tahun": {
+                    "type": "string"
+                }
+            }
+        },
+        "web.PerangkatDaerah": {
+            "type": "object",
+            "properties": {
+                "kode_opd": {
+                    "type": "string"
+                },
+                "nama_opd": {
+                    "type": "string"
+                }
+            }
+        },
         "web.PermasalahanCreateRequest": {
             "description": "Request Permasalahan Create",
             "type": "object",
@@ -274,6 +818,7 @@ const docTemplate = `{
             ],
             "properties": {
                 "jenis_masalah": {
+                    "description": "enum:MASALAH_POKOK,MASALAH,AKAR_MASALAH",
                     "type": "string"
                 },
                 "kode_opd": {
@@ -292,6 +837,71 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "tahun": {
+                    "type": "string"
+                }
+            }
+        },
+        "web.PermasalahanIsuStrategisUpdateRequest": {
+            "type": "object",
+            "properties": {
+                "data_dukung": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/web.DataDukungUpdateRequest"
+                    }
+                },
+                "permasalahan_opd_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "web.PermasalahanOpdRequest": {
+            "type": "object",
+            "properties": {
+                "data_dukung": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/web.DataDukungRequest"
+                    }
+                },
+                "id_permasalahan": {
+                    "type": "integer"
+                }
+            }
+        },
+        "web.PermasalahanResponse": {
+            "type": "object",
+            "properties": {
+                "data_dukung": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/web.DataDukungResponse"
+                    }
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "jenis_masalah": {
+                    "type": "string"
+                },
+                "level_pohon": {
+                    "type": "integer"
+                },
+                "masalah": {
+                    "type": "string"
+                }
+            }
+        },
+        "web.PermasalahanResponsesbyId": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "level_pohon": {
+                    "type": "integer"
+                },
+                "nama_pohon": {
                     "type": "string"
                 }
             }

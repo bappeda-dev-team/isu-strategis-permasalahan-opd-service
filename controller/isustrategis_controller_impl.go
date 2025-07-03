@@ -17,6 +17,17 @@ func NewIsuStrategisControllerImpl(isuStrategisService service.IsuStrategisServi
 	return &IsuStrategisControllerImpl{IsuStrategisService: isuStrategisService}
 }
 
+// Create godoc
+// @Summary Create Isu Strategis
+// @Description Create a new isu strategis
+// @Tags Isu Strategis Service
+// @Accept json
+// @Produce json
+// @Param isu_strategis body web.IsuStrategisCreateRequest true "Create Isu Strategis"
+// @Success 200 {object} web.WebResponse
+// @Failure 400 {object} web.WebResponse
+// @Failure 500 {object} web.WebResponse
+// @Router /isu_strategis [post]
 func (controller *IsuStrategisControllerImpl) Create(c echo.Context) error {
 	request := web.IsuStrategisCreateRequest{}
 	err := c.Bind(&request)
@@ -43,6 +54,18 @@ func (controller *IsuStrategisControllerImpl) Create(c echo.Context) error {
 	})
 }
 
+// Update godoc
+// @Summary Update Isu Strategis
+// @Description Update a isu strategis
+// @Tags Isu Strategis Service
+// @Accept json
+// @Produce json
+// @Param id path string true "Isu Strategis ID"
+// @Param isu_strategis body web.IsuStrategisUpdateRequest true "Update Isu Strategis"
+// @Success 200 {object} web.WebResponse
+// @Failure 400 {object} web.WebResponse
+// @Failure 500 {object} web.WebResponse
+// @Router /isu_strategis/{id} [put]
 func (controller *IsuStrategisControllerImpl) Update(c echo.Context) error {
 	request := web.IsuStrategisUpdateRequest{}
 	id := c.Param("id")
@@ -79,6 +102,13 @@ func (controller *IsuStrategisControllerImpl) Update(c echo.Context) error {
 	})
 }
 
+// Delete godoc
+// @Summary Delete Isu Strategis
+// @Description Delete a isu strategis
+// @Tags Isu Strategis Service
+// @Accept json
+// @Produce json
+// @Param id path string true "Isu Strategis ID"
 func (controller *IsuStrategisControllerImpl) Delete(c echo.Context) error {
 	id := c.Param("id")
 	idInt, err := strconv.Atoi(id)
@@ -103,6 +133,17 @@ func (controller *IsuStrategisControllerImpl) Delete(c echo.Context) error {
 	})
 }
 
+// FindById godoc
+// @Summary FindById Isu Strategis
+// @Description FindById a isu strategis
+// @Tags Isu Strategis Service
+// @Accept json
+// @Produce json
+// @Param id path string true "Isu Strategis ID"
+// @Success 200 {object} web.WebResponse{data=web.IsuStrategisResponse}
+// @Failure 400 {object} web.WebResponse
+// @Failure 500 {object} web.WebResponse
+// @Router /isu_strategis/{id} [get]
 func (controller *IsuStrategisControllerImpl) FindById(c echo.Context) error {
 	id := c.Param("id")
 	idInt, err := strconv.Atoi(id)
@@ -128,6 +169,19 @@ func (controller *IsuStrategisControllerImpl) FindById(c echo.Context) error {
 	})
 }
 
+// FindAll godoc
+// @Summary FindAll Isu Strategis
+// @Description FindAll a isu strategis
+// @Tags Isu Strategis Service
+// @Accept json
+// @Produce json
+// @Param kode_opd path string true "Kode OPD"
+// @Param tahun_awal path string true "Tahun Awal"
+// @Param tahun_akhir path string true "Tahun Akhir"
+// @Success 200 {object} web.WebResponse{data=web.IsuStrategisResponse}
+// @Failure 400 {object} web.WebResponse
+// @Failure 500 {object} web.WebResponse
+// @Router /isu_strategis/{kode_opd}/{tahun_awal}/{tahun_akhir} [get]
 func (controller *IsuStrategisControllerImpl) FindAll(c echo.Context) error {
 	kodeOpd := c.Param("kode_opd")
 	tahunAwal := c.Param("tahun_awal")

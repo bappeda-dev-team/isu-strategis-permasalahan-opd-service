@@ -400,6 +400,18 @@ func (repository *IsuStrategisRepositoryImpl) FindById(ctx context.Context, tx *
 	var isuStrategis *domain.IsuStrategis
 	permasalahanMap := make(map[int]*domain.Permasalahan)
 	dataDukungMap := make(map[int]*domain.DataDukung)
+	jumlahDataMap := make(map[int]map[string]domain.JumlahData)
+
+	// Fungsi helper untuk generate tahun-tahun dalam rentang
+	generateYearRange := func(start, end string) []string {
+		startYear, _ := strconv.Atoi(start)
+		endYear, _ := strconv.Atoi(end)
+		years := make([]string, 0)
+		for year := endYear; year >= startYear; year-- {
+			years = append(years, strconv.Itoa(year))
+		}
+		return years
+	}
 
 	for rows.Next() {
 		var (
@@ -473,6 +485,23 @@ func (repository *IsuStrategisRepositoryImpl) FindById(ctx context.Context, tx *
 			// Handle DataDukung
 			if dataDukungId.Valid {
 				ddId := int(dataDukungId.Int64)
+
+				// Inisialisasi map jumlah data jika belum ada
+				if _, exists := jumlahDataMap[ddId]; !exists {
+					jumlahDataMap[ddId] = make(map[string]domain.JumlahData)
+				}
+
+				// Simpan data jumlah data ke map
+				if jumlahDataId.Valid && jumlahDataTahun.Valid {
+					jumlahDataMap[ddId][jumlahDataTahun.String] = domain.JumlahData{
+						Id:           int(jumlahDataId.Int64),
+						IdDataDukung: ddId,
+						Tahun:        jumlahDataTahun.String,
+						JumlahData:   jumlah.Float64,
+						Satuan:       satuan.String,
+					}
+				}
+
 				dd, exists := dataDukungMap[ddId]
 				if !exists {
 					dd = &domain.DataDukung{
@@ -492,38 +521,36 @@ func (repository *IsuStrategisRepositoryImpl) FindById(ctx context.Context, tx *
 						}
 					}
 				}
-
-				// Handle JumlahData - hanya untuk tahun dalam rentang
-				if jumlahDataId.Valid && jumlahDataTahun.Valid {
-					tahunJumlahData := jumlahDataTahun.String
-					// Cek apakah tahun dalam rentang
-					if tahunJumlahData >= tahunAwal && tahunJumlahData <= tahunAkhir {
-						jd := domain.JumlahData{
-							Id:           int(jumlahDataId.Int64),
-							IdDataDukung: ddId,
-							Tahun:        tahunJumlahData,
-							JumlahData:   jumlah.Float64,
-							Satuan:       satuan.String,
-						}
-
-						// Tambahkan ke data dukung yang benar
-						for i := range isuStrategis.PermasalahanOpd {
-							for j := range isuStrategis.PermasalahanOpd[i].DataDukung {
-								if isuStrategis.PermasalahanOpd[i].DataDukung[j].Id == ddId {
-									isuStrategis.PermasalahanOpd[i].DataDukung[j].JumlahData = append(
-										isuStrategis.PermasalahanOpd[i].DataDukung[j].JumlahData, jd)
-									break
-								}
-							}
-						}
-					}
-				}
 			}
 		}
 	}
 
 	if isuStrategis == nil {
 		return domain.IsuStrategis{}, nil
+	}
+
+	// Setelah semua data terkumpul, generate rentang tahun dan isi data
+	for i, perm := range isuStrategis.PermasalahanOpd {
+		for j, dd := range perm.DataDukung {
+			yearRange := generateYearRange(isuStrategis.TahunAwal, isuStrategis.TahunAkhir)
+			jumlahDataSlice := make([]domain.JumlahData, 0)
+
+			for _, year := range yearRange {
+				if data, exists := jumlahDataMap[dd.Id][year]; exists {
+					jumlahDataSlice = append(jumlahDataSlice, data)
+				} else {
+					// Jika tidak ada data untuk tahun tersebut, buat data kosong
+					jumlahDataSlice = append(jumlahDataSlice, domain.JumlahData{
+						IdDataDukung: dd.Id,
+						Tahun:        year,
+						JumlahData:   0,
+						Satuan:       "",
+					})
+				}
+			}
+
+			isuStrategis.PermasalahanOpd[i].DataDukung[j].JumlahData = jumlahDataSlice
+		}
 	}
 
 	return *isuStrategis, nil
@@ -702,7 +729,7 @@ func (repository *IsuStrategisRepositoryImpl) FindAll(ctx context.Context, tx *s
 			tahunAwal        string
 			tahunAkhir       string
 			isuStrategis     string
-			createdAt        time.Time // Tambahkan created_at
+			createdAt        time.Time
 			permasalahanId   sql.NullInt64
 			permasalahan     sql.NullString
 			pKodeOpd         sql.NullString

@@ -1,9 +1,218 @@
 basePath: /
 definitions:
+  web.ChildResponse:
+    properties:
+      childs:
+        items:
+          $ref: '#/definitions/web.ChildResponse'
+        type: array
+      id:
+        type: integer
+      id_permasalahan:
+        type: integer
+      is_permasalahan:
+        type: boolean
+      jenis_masalah:
+        type: string
+      level_pohon:
+        type: integer
+      nama_pohon:
+        type: string
+      parent:
+        type: integer
+      perangkat_daerah:
+        $ref: '#/definitions/web.PerangkatDaerah'
+      permasalahan_terpilih:
+        type: boolean
+      status:
+        type: string
+    type: object
+  web.DataDukungRequest:
+    properties:
+      data_dukung:
+        type: string
+      id:
+        type: integer
+      jumlah_data:
+        items:
+          $ref: '#/definitions/web.JumlahDataRequest'
+        type: array
+      narasi_data_dukung:
+        type: string
+      permasalahan_opd_id:
+        type: integer
+    required:
+    - data_dukung
+    - narasi_data_dukung
+    type: object
+  web.DataDukungResponse:
+    properties:
+      data_dukung:
+        type: string
+      id:
+        type: integer
+      jumlah_data:
+        items:
+          $ref: '#/definitions/web.JumlahDataResponse'
+        type: array
+      narasi_data_dukung:
+        type: string
+      permasalahan_opd_id:
+        type: integer
+    type: object
+  web.DataDukungUpdateRequest:
+    properties:
+      data_dukung:
+        type: string
+      id:
+        type: integer
+      jumlah_data:
+        items:
+          $ref: '#/definitions/web.JumlahDataUpdateRequest'
+        type: array
+      narasi_data_dukung:
+        type: string
+    type: object
+  web.IsuStrategisCreateRequest:
+    description: Request Isu Strategis Create
+    properties:
+      id:
+        type: integer
+      isu_strategis:
+        type: string
+      kode_bidang_urusan:
+        type: string
+      kode_opd:
+        type: string
+      nama_bidang_urusan:
+        type: string
+      nama_opd:
+        type: string
+      permasalahan_opd:
+        items:
+          $ref: '#/definitions/web.PermasalahanOpdRequest'
+        type: array
+      tahun_akhir:
+        type: string
+      tahun_awal:
+        type: string
+    required:
+    - isu_strategis
+    - kode_bidang_urusan
+    - kode_opd
+    - nama_bidang_urusan
+    - nama_opd
+    - tahun_akhir
+    - tahun_awal
+    type: object
+  web.IsuStrategisResponse:
+    description: Response Isu Strategis
+    properties:
+      created_at:
+        type: string
+      id:
+        type: integer
+      isu_strategis:
+        type: string
+      kode_bidang_urusan:
+        type: string
+      kode_opd:
+        type: string
+      nama_bidang_urusan:
+        type: string
+      nama_opd:
+        type: string
+      permasalahan_opd:
+        items:
+          $ref: '#/definitions/web.PermasalahanResponse'
+        type: array
+      tahun_akhir:
+        type: string
+      tahun_awal:
+        type: string
+    type: object
+  web.IsuStrategisUpdateRequest:
+    description: Request Isu Strategis Update
+    properties:
+      id:
+        type: integer
+      isu_strategis:
+        type: string
+      kode_bidang_urusan:
+        type: string
+      kode_opd:
+        type: string
+      nama_bidang_urusan:
+        type: string
+      nama_opd:
+        type: string
+      permasalahan_opd:
+        items:
+          $ref: '#/definitions/web.PermasalahanIsuStrategisUpdateRequest'
+        type: array
+      tahun_akhir:
+        type: string
+      tahun_awal:
+        type: string
+    required:
+    - id
+    - isu_strategis
+    - kode_bidang_urusan
+    - kode_opd
+    - nama_bidang_urusan
+    - nama_opd
+    - tahun_akhir
+    - tahun_awal
+    type: object
+  web.JumlahDataRequest:
+    properties:
+      id:
+        type: integer
+      id_data_dukung:
+        type: integer
+      jumlah_data:
+        type: number
+      satuan:
+        type: string
+      tahun:
+        type: string
+    type: object
+  web.JumlahDataResponse:
+    properties:
+      id:
+        type: integer
+      id_data_dukung:
+        type: integer
+      jumlah_data:
+        type: number
+      satuan:
+        type: string
+      tahun:
+        type: string
+    type: object
+  web.JumlahDataUpdateRequest:
+    properties:
+      id:
+        type: integer
+      jumlah_data:
+        type: number
+      satuan:
+        type: string
+      tahun:
+        type: string
+    type: object
+  web.PerangkatDaerah:
+    properties:
+      kode_opd:
+        type: string
+      nama_opd:
+        type: string
+    type: object
   web.PermasalahanCreateRequest:
     description: Request Permasalahan Create
     properties:
       jenis_masalah:
+        description: enum:MASALAH_POKOK,MASALAH,AKAR_MASALAH
         type: string
       kode_opd:
         type: string
@@ -25,6 +234,48 @@ definitions:
     - permasalahan
     - pokin_id
     - tahun
+    type: object
+  web.PermasalahanIsuStrategisUpdateRequest:
+    properties:
+      data_dukung:
+        items:
+          $ref: '#/definitions/web.DataDukungUpdateRequest'
+        type: array
+      permasalahan_opd_id:
+        type: integer
+    type: object
+  web.PermasalahanOpdRequest:
+    properties:
+      data_dukung:
+        items:
+          $ref: '#/definitions/web.DataDukungRequest'
+        type: array
+      id_permasalahan:
+        type: integer
+    type: object
+  web.PermasalahanResponse:
+    properties:
+      data_dukung:
+        items:
+          $ref: '#/definitions/web.DataDukungResponse'
+        type: array
+      id:
+        type: integer
+      jenis_masalah:
+        type: string
+      level_pohon:
+        type: integer
+      masalah:
+        type: string
+    type: object
+  web.PermasalahanResponsesbyId:
+    properties:
+      id:
+        type: integer
+      level_pohon:
+        type: integer
+      nama_pohon:
+        type: string
     type: object
   web.PermasalahanUpdateRequest:
     description: Update Request Permasalahan
@@ -71,6 +322,143 @@ info:
   title: Permasalahan & Isu Strategis Service API
   version: "1.0"
 paths:
+  /isu_strategis:
+    post:
+      consumes:
+      - application/json
+      description: Create a new isu strategis
+      parameters:
+      - description: Create Isu Strategis
+        in: body
+        name: isu_strategis
+        required: true
+        schema:
+          $ref: '#/definitions/web.IsuStrategisCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/web.WebResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/web.WebResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/web.WebResponse'
+      summary: Create Isu Strategis
+      tags:
+      - Isu Strategis Service
+  /isu_strategis/{id}:
+    get:
+      consumes:
+      - application/json
+      description: FindById a isu strategis
+      parameters:
+      - description: Isu Strategis ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/web.WebResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/web.WebResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/web.WebResponse'
+      summary: FindById Isu Strategis
+      tags:
+      - Isu Strategis Service
+    put:
+      consumes:
+      - application/json
+      description: Update a isu strategis
+      parameters:
+      - description: Isu Strategis ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Update Isu Strategis
+        in: body
+        name: isu_strategis
+        required: true
+        schema:
+          $ref: '#/definitions/web.IsuStrategisUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/web.WebResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/web.WebResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/web.WebResponse'
+      summary: Update Isu Strategis
+      tags:
+      - Isu Strategis Service
+  /isu_strategis/{kode_opd}/{tahun_awal}/{tahun_akhir}:
+    get:
+      consumes:
+      - application/json
+      description: FindAll a isu strategis
+      parameters:
+      - description: Kode OPD
+        in: path
+        name: kode_opd
+        required: true
+        type: string
+      - description: Tahun Awal
+        in: path
+        name: tahun_awal
+        required: true
+        type: string
+      - description: Tahun Akhir
+        in: path
+        name: tahun_akhir
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/web.WebResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/web.IsuStrategisResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/web.WebResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/web.WebResponse'
+      summary: FindAll Isu Strategis
+      tags:
+      - Isu Strategis Service
   /permasalahan:
     post:
       consumes:
@@ -146,7 +534,12 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/web.WebResponse'
+            allOf:
+            - $ref: '#/definitions/web.WebResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/web.PermasalahanResponsesbyId'
+              type: object
         "400":
           description: Bad Request
           schema:
@@ -214,7 +607,12 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/web.WebResponse'
+            allOf:
+            - $ref: '#/definitions/web.WebResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/web.ChildResponse'
+              type: object
         "400":
           description: Bad Request
           schema:

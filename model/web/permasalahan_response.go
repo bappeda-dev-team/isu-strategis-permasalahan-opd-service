@@ -70,3 +70,9 @@ type TargetPokin struct {
 	Target      string `json:"target"`
 	Satuan      string `json:"satuan"`
 }
+
+type PermasalahanResponsesbyId struct {
+	Id         int    `json:"id"`
+	NamaPohon  string `json:"nama_pohon"`
+	LevelPohon int    `json:"level_pohon"`
+}
