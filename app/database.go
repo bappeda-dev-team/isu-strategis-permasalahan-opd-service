@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -73,7 +74,15 @@ func RunFlyway() {
 
 	cmd := exec.Command("flyway", "-locations=filesystem:./db/migrations", "migrate")
 
-	newPath := "/opt/homebrew/opt/openjdk/bin:" + os.Getenv("PATH")
+	// Menggunakan JAVA_HOME dari environment variable
+	javaHome := os.Getenv("JAVA_HOME")
+	if javaHome == "" {
+		log.Fatal("Environment variable JAVA_HOME harus diatur")
+	}
+
+	// Membuat path yang sesuai dengan sistem operasi menggunakan filepath
+	javaPath := filepath.Join(javaHome, "bin")
+	newPath := fmt.Sprintf("%s%s%s", javaPath, string(os.PathListSeparator), os.Getenv("PATH"))
 
 	dbHost := os.Getenv("DB_HOST")
 	dbPort := os.Getenv("DB_PORT")
