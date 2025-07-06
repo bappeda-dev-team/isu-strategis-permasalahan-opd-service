@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -72,7 +73,20 @@ func GetConnection() *sql.DB {
 func RunFlyway() {
 	godotenv.Load()
 
-	cmd := exec.Command("flyway", "-locations=filesystem:./db/migrations", "migrate")
+	// Mencari executable Flyway berdasarkan sistem operasi
+	var flywayCmd string
+	if runtime.GOOS == "windows" {
+		// Di Windows, coba cari flyway.cmd di PATH
+		flywayPath := os.Getenv("FLYWAY_HOME")
+		if flywayPath == "" {
+			log.Fatal("Environment variable FLYWAY_HOME harus diatur di Windows (contoh: C:\\Program Files\\flyway)")
+		}
+		flywayCmd = filepath.Join(flywayPath, "flyway.cmd")
+	} else {
+		flywayCmd = "flyway" // Untuk Linux/MacOS
+	}
+
+	cmd := exec.Command(flywayCmd, "-locations=filesystem:./db/migrations", "migrate")
 
 	// Menggunakan JAVA_HOME dari environment variable
 	javaHome := os.Getenv("JAVA_HOME")
@@ -80,7 +94,7 @@ func RunFlyway() {
 		log.Fatal("Environment variable JAVA_HOME harus diatur")
 	}
 
-	// Membuat path yang sesuai dengan sistem operasi menggunakan filepath
+	// Membuat path yang sesuai dengan sistem operasi
 	javaPath := filepath.Join(javaHome, "bin")
 	newPath := fmt.Sprintf("%s%s%s", javaPath, string(os.PathListSeparator), os.Getenv("PATH"))
 
