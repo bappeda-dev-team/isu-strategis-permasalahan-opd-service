@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"os"
-	"permasalahanService/app"
 	"permasalahanService/docs"
 
 	"permasalahanService/helper"
@@ -32,7 +31,8 @@ func NewServer(e *echo.Echo) *echo.Echo {
 
 func main() {
 
-	app.RunFlyway()
+	// DEPRECATED jalankan flyway secara terpisah
+	// app.RunFlyway()
 
 	server := InitializedServer()
 	host := os.Getenv("host")
