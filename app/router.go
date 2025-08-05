@@ -13,6 +13,7 @@ func NewRouter(permasalahanController controller.PermasalahanController, permasa
 
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
+	e.Use(middleware.CORS())
 
 	e.GET("/swagger/*", echoSwagger.WrapHandler)
 
