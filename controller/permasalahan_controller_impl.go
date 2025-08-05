@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"permasalahanService/model/web"
 	"permasalahanService/service"
+	"strconv"
 
 	"github.com/labstack/echo/v4"
 )
@@ -77,6 +78,18 @@ func (controller *PermasalahanControllerImpl) Update(c echo.Context) error {
 			Data:   err.Error(),
 		})
 	}
+
+	// Set ID dari parameter setelah bind
+	idStr := c.Param("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, web.WebResponse{
+			Code:   http.StatusBadRequest,
+			Status: "Invalid ID",
+			Data:   err.Error(),
+		})
+	}
+	request.Id = id
 
 	permasalahanResponse, err := controller.permasalahanService.Update(c.Request().Context(), request)
 	if err != nil {

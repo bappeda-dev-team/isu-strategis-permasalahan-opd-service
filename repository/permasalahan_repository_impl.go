@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"permasalahanService/model/domain"
@@ -36,20 +37,58 @@ func (repository *PermasalahanRepositoryImpl) Create(ctx context.Context, tx *sq
 }
 
 func (repository *PermasalahanRepositoryImpl) Update(ctx context.Context, tx *sql.Tx, permasalahan domain.Permasalahan) domain.Permasalahan {
-	script := "UPDATE tb_permasalahan_opd SET  permasalahan = ?, level_pohon = ?, kode_opd = ?, tahun = ?, nama_opd = ? WHERE id = ?"
-	result, err := tx.ExecContext(ctx, script, permasalahan.Permasalahan, permasalahan.LevelPohon, permasalahan.KodeOpd, permasalahan.Tahun, permasalahan.NamaOpd, permasalahan.Id)
+	// Cek dulu data yang ada
+	existing, err := repository.FindById(ctx, tx, fmt.Sprintf("%d", permasalahan.Id))
 	if err != nil {
+		log.Printf("Error finding existing data: %v", err)
+		return domain.Permasalahan{}
+	}
+
+	// Jika data sama persis, langsung return data yang ada
+	if existing.Permasalahan == permasalahan.Permasalahan &&
+		existing.LevelPohon == permasalahan.LevelPohon &&
+		existing.KodeOpd == permasalahan.KodeOpd &&
+		existing.NamaOpd == permasalahan.NamaOpd &&
+		existing.Tahun == permasalahan.Tahun {
+		log.Printf("No changes detected, returning existing data")
+		return existing
+	}
+
+	script := "UPDATE tb_permasalahan_opd SET permasalahan = ?, kode_opd = ?, tahun = ?, nama_opd = ? WHERE id = ?"
+
+	result, err := tx.ExecContext(ctx, script,
+		permasalahan.Permasalahan,
+		permasalahan.KodeOpd,
+		permasalahan.Tahun,
+		permasalahan.NamaOpd,
+		permasalahan.Id)
+
+	if err != nil {
+		log.Printf("Error executing update: %v", err)
 		return domain.Permasalahan{}
 	}
 
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
+		log.Printf("Error getting rows affected: %v", err)
 		return domain.Permasalahan{}
 	}
-	if rowsAffected != 1 {
+
+	// Jika tidak ada yang berubah (rowsAffected = 0), itu bukan error
+	// Kita tetap return data yang ada
+	if rowsAffected == 0 {
+		log.Printf("No rows affected, data might be identical")
+		return existing
+	}
+
+	// Ambil data terbaru jika ada perubahan
+	updated, err := repository.FindById(ctx, tx, fmt.Sprintf("%d", permasalahan.Id))
+	if err != nil {
+		log.Printf("Error getting updated data: %v", err)
 		return domain.Permasalahan{}
 	}
-	return permasalahan
+
+	return updated
 }
 
 func (repository *PermasalahanRepositoryImpl) Delete(ctx context.Context, tx *sql.Tx, id string) error {
@@ -68,14 +107,16 @@ func (repository *PermasalahanRepositoryImpl) Delete(ctx context.Context, tx *sq
 	}
 	return nil
 }
-
 func (repository *PermasalahanRepositoryImpl) FindById(ctx context.Context, tx *sql.Tx, id string) (domain.Permasalahan, error) {
+	log.Printf("Finding permasalahan with ID: %s", id)
+
 	script := "SELECT id, pokin_id, permasalahan, level_pohon, kode_opd, nama_opd, tahun, jenis_masalah FROM tb_permasalahan_opd WHERE id = ?"
+
 	rows, err := tx.QueryContext(ctx, script, id)
 	if err != nil {
+		log.Printf("Error querying database: %v", err)
 		return domain.Permasalahan{}, err
 	}
-
 	defer rows.Close()
 
 	permasalahan := domain.Permasalahan{}
@@ -91,11 +132,15 @@ func (repository *PermasalahanRepositoryImpl) FindById(ctx context.Context, tx *
 			&permasalahan.JenisMasalah,
 		)
 		if err != nil {
+			log.Printf("Error scanning row: %v", err)
 			return domain.Permasalahan{}, err
 		}
+		log.Printf("Found permasalahan: %+v", permasalahan)
+		return permasalahan, nil
 	}
 
-	return permasalahan, nil
+	log.Printf("No permasalahan found with ID: %s", id)
+	return domain.Permasalahan{}, errors.New("permasalahan not found")
 }
 
 func (repository *PermasalahanRepositoryImpl) FindByKodeOpdAndTahun(ctx context.Context, tx *sql.Tx, kodeOpd string, tahun string) ([]domain.Permasalahan, error) {

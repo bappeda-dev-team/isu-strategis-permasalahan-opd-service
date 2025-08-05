@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"log"
 	"permasalahanService/helper"
 	"permasalahanService/model/domain"
 	"permasalahanService/model/web"
@@ -64,9 +65,10 @@ func (service *PermasalahanServiceImpl) Create(ctx context.Context, request web.
 	}
 
 	permasalahanResponse := web.ChildResponse{
-		Id:         permasalahan.Id,
-		NamaPohon:  permasalahan.Permasalahan,
-		LevelPohon: permasalahan.LevelPohon,
+		Id:             permasalahan.PokinId,
+		IdPermasalahan: permasalahan.Id,
+		NamaPohon:      permasalahan.Permasalahan,
+		LevelPohon:     permasalahan.LevelPohon,
 		PerangkatDaerah: web.PerangkatDaerah{
 			KodeOpd: permasalahan.KodeOpd,
 			NamaOpd: permasalahan.NamaOpd,
@@ -81,35 +83,52 @@ func (service *PermasalahanServiceImpl) Create(ctx context.Context, request web.
 func (service *PermasalahanServiceImpl) Update(ctx context.Context, request web.PermasalahanUpdateRequest) (web.ChildResponse, error) {
 	tx, err := service.db.Begin()
 	if err != nil {
+		log.Printf("Error begin transaction: %v", err)
 		return web.ChildResponse{}, err
 	}
 	defer helper.CommitOrRollback(tx)
 
-	permasalahan, err := service.permasalahanRepository.FindById(ctx, tx, strconv.Itoa(request.Id))
+	// Log request yang diterima
+	log.Printf("Updating permasalahan with ID: %d", request.Id)
+	log.Printf("Request data: %+v", request)
+
+	// Cari data existing
+	existing, err := service.permasalahanRepository.FindById(ctx, tx, strconv.Itoa(request.Id))
 	if err != nil {
+		log.Printf("Error finding permasalahan: %v", err)
 		return web.ChildResponse{}, err
 	}
 
-	permasalahan.Permasalahan = request.Permasalahan
-	permasalahan.LevelPohon = request.LevelPohon
-	permasalahan.KodeOpd = request.KodeOpd
-	permasalahan.NamaOpd = request.NamaOpd
-	permasalahan.Tahun = request.Tahun
+	// Update field yang dikirim dalam request
+	existing.Permasalahan = request.Permasalahan
+	existing.KodeOpd = request.KodeOpd
+	existing.NamaOpd = request.NamaOpd
+	existing.Tahun = request.Tahun
 
-	permasalahan = service.permasalahanRepository.Update(ctx, tx, permasalahan)
-	if permasalahan.Id == 0 {
-		return web.ChildResponse{}, errors.New("permasalahan not found")
+	// Log data yang akan diupdate
+	log.Printf("Data to update: %+v", existing)
+
+	updated := service.permasalahanRepository.Update(ctx, tx, existing)
+
+	// Log hasil update
+	log.Printf("Update result: %+v", updated)
+
+	if updated.Id == 0 {
+		log.Printf("Failed to update permasalahan, got empty result")
+		return web.ChildResponse{}, errors.New("failed to update permasalahan")
 	}
 
 	permasalahanResponse := web.ChildResponse{
-		Id:         permasalahan.Id,
-		NamaPohon:  permasalahan.Permasalahan,
-		LevelPohon: permasalahan.LevelPohon,
+		Id:             updated.PokinId,
+		IdPermasalahan: updated.Id,
+		NamaPohon:      updated.Permasalahan,
+		LevelPohon:     updated.LevelPohon,
 		PerangkatDaerah: web.PerangkatDaerah{
-			KodeOpd: permasalahan.KodeOpd,
-			NamaOpd: permasalahan.NamaOpd,
+			KodeOpd: updated.KodeOpd,
+			NamaOpd: updated.NamaOpd,
 		},
 		IsPermasalahan: true,
+		JenisMasalah:   updated.JenisMasalah,
 	}
 
 	return permasalahanResponse, nil
