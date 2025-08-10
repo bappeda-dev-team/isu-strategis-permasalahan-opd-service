@@ -18,7 +18,23 @@ func NewIsuStrategisRepositoryImpl() *IsuStrategisRepositoryImpl {
 }
 
 func (repository *IsuStrategisRepositoryImpl) Create(ctx context.Context, tx *sql.Tx, isuStrategis domain.IsuStrategis) (domain.IsuStrategis, error) {
-	// Insert isu strategis
+	// Validasi semua permasalahan terlebih dahulu
+	for _, permasalahan := range isuStrategis.PermasalahanOpd {
+		// Cek status isu_strategis_id untuk setiap permasalahan
+		var currentIsuStrategisId int
+		script := `SELECT isu_strategis_id FROM tb_permasalahan_opd WHERE id = ?`
+		err := tx.QueryRowContext(ctx, script, permasalahan.Id).Scan(&currentIsuStrategisId)
+		if err != nil {
+			return domain.IsuStrategis{}, err
+		}
+
+		// Jika permasalahan sudah memiliki isu strategis, batalkan seluruh proses
+		if currentIsuStrategisId != 0 {
+			return domain.IsuStrategis{}, fmt.Errorf("permasalahan dengan ID %d sudah memiliki isu strategis", permasalahan.Id)
+		}
+	}
+
+	// Setelah semua validasi berhasil, baru insert isu strategis
 	script := `INSERT INTO tb_isu_strategis_opd 
                (kode_opd, nama_opd, kode_bidang_urusan, nama_bidang_urusan, tahun_awal, tahun_akhir, isu_strategis) 
                VALUES (?, ?, ?, ?, ?, ?, ?)`
@@ -42,35 +58,21 @@ func (repository *IsuStrategisRepositoryImpl) Create(ctx context.Context, tx *sq
 	}
 	isuStrategis.Id = int(id)
 
-	// Update permasalahan
+	// Update permasalahan dan tambah data dukung
 	for _, permasalahan := range isuStrategis.PermasalahanOpd {
-		// Cek ulang isu_strategis_id sebelum update
-		var currentIsuStrategisId int
-		script = `SELECT isu_strategis_id FROM tb_permasalahan_opd WHERE id = ?`
-		err = tx.QueryRowContext(ctx, script, permasalahan.Id).Scan(&currentIsuStrategisId)
-		if err != nil {
-			return domain.IsuStrategis{}, err
-		}
-
-		// Jika isu_strategis_id tidak 0, batalkan proses
-		if currentIsuStrategisId != 0 {
-			return domain.IsuStrategis{}, fmt.Errorf("permasalahan dengan ID %d sudah memiliki isu strategis", permasalahan.Id)
-		}
-
-		// Jika aman, lakukan update
+		// Update isu_strategis_id
 		script = `UPDATE tb_permasalahan_opd SET isu_strategis_id = ? WHERE id = ? AND isu_strategis_id = 0`
 		result, err = tx.ExecContext(ctx, script, isuStrategis.Id, permasalahan.Id)
 		if err != nil {
 			return domain.IsuStrategis{}, err
 		}
 
-		// Pastikan update berhasil
 		rowsAffected, err := result.RowsAffected()
 		if err != nil {
 			return domain.IsuStrategis{}, err
 		}
 		if rowsAffected == 0 {
-			return domain.IsuStrategis{}, fmt.Errorf("permasalahan dengan ID %d sudah memiliki isu strategis atau tidak ditemukan", permasalahan.Id)
+			return domain.IsuStrategis{}, fmt.Errorf("gagal mengupdate permasalahan dengan ID %d", permasalahan.Id)
 		}
 
 		// Insert data dukung
@@ -95,7 +97,7 @@ func (repository *IsuStrategisRepositoryImpl) Create(ctx context.Context, tx *sq
 
 			// Insert jumlah data
 			for _, jumlahData := range dataDukung.JumlahData {
-				if jumlahData.Tahun != "" { // hanya insert jika ada tahun
+				if jumlahData.Tahun != "" {
 					script = `INSERT INTO tb_jumlah_data 
                               (id_data_dukung, tahun, jumlah, satuan) 
                               VALUES (?, ?, ?, ?)`

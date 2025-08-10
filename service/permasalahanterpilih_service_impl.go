@@ -80,9 +80,10 @@ func (service *PermasalahanTerpilihServiceImpl) Create(ctx context.Context, requ
 
 	// Buat response
 	response := web.ChildResponse{
-		Id:         permasalahanTerpilih.Id,
-		NamaPohon:  permasalahan.Permasalahan,
-		LevelPohon: permasalahan.LevelPohon,
+		Id:             permasalahanTerpilih.Id,
+		IdPermasalahan: permasalahanTerpilih.PermasalahanOpdId,
+		NamaPohon:      permasalahan.Permasalahan,
+		LevelPohon:     permasalahan.LevelPohon,
 		PerangkatDaerah: web.PerangkatDaerah{
 			KodeOpd: permasalahan.KodeOpd,
 			NamaOpd: permasalahan.NamaOpd,
