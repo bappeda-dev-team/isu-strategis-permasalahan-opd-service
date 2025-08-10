@@ -116,9 +116,10 @@ func (service *PermasalahanTerpilihServiceImpl) FindAll(ctx context.Context, kod
 			return nil, errors.New("permasalahan tidak ditemukan")
 		}
 		responses = append(responses, web.ChildResponse{
-			Id:         permasalahanTerpilih.Id,
-			NamaPohon:  permasalahan.Permasalahan,
-			LevelPohon: permasalahan.LevelPohon,
+			Id:             permasalahanTerpilih.Id,
+			IdPermasalahan: permasalahanTerpilih.PermasalahanOpdId,
+			NamaPohon:      permasalahan.Permasalahan,
+			LevelPohon:     permasalahan.LevelPohon,
 			PerangkatDaerah: web.PerangkatDaerah{
 				KodeOpd: permasalahan.KodeOpd,
 				NamaOpd: permasalahan.NamaOpd,
