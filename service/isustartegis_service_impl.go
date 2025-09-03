@@ -317,7 +317,22 @@ func (service *IsuStrategisServiceImpl) Delete(ctx context.Context, id int) erro
 	}
 	defer helper.CommitOrRollback(tx)
 
-	return service.IsuStrategisRepository.Delete(ctx, tx, id)
+	// Validasi apakah isu strategis ada
+	isuStrategis, err := service.IsuStrategisRepository.FindById(ctx, tx, id)
+	if err != nil {
+		return err
+	}
+	if isuStrategis.Id == 0 {
+		return fmt.Errorf("isu strategis dengan ID %d tidak ditemukan", id)
+	}
+
+	// Proses delete
+	err = service.IsuStrategisRepository.Delete(ctx, tx, id)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (service *IsuStrategisServiceImpl) FindById(ctx context.Context, id int) (web.IsuStrategisResponse, error) {

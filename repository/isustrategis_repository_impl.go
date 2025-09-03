@@ -351,9 +351,37 @@ func (repository *IsuStrategisRepositoryImpl) Update(ctx context.Context, tx *sq
 }
 
 func (repository *IsuStrategisRepositoryImpl) Delete(ctx context.Context, tx *sql.Tx, id int) error {
-	script := "DELETE FROM tb_isu_strategis_opd WHERE id = ?"
-	_, err := tx.ExecContext(ctx, script, id)
-	return err
+	// Update isu_strategis_id menjadi 0 di tb_permasalahan_opd
+	scriptUpdate := "UPDATE tb_permasalahan_opd SET isu_strategis_id = 0 WHERE isu_strategis_id = ?"
+	result, err := tx.ExecContext(ctx, scriptUpdate, id)
+	if err != nil {
+		return fmt.Errorf("gagal mengupdate permasalahan: %v", err)
+	}
+
+	// Log jumlah permasalahan yang diupdate
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("gagal mendapatkan jumlah rows affected: %v", err)
+	}
+	log.Printf("Berhasil mengupdate %d permasalahan", rowsAffected)
+
+	// Hapus isu strategis
+	scriptDelete := "DELETE FROM tb_isu_strategis_opd WHERE id = ?"
+	result, err = tx.ExecContext(ctx, scriptDelete, id)
+	if err != nil {
+		return fmt.Errorf("gagal menghapus isu strategis: %v", err)
+	}
+
+	// Pastikan isu strategis berhasil dihapus
+	rowsAffected, err = result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("gagal mendapatkan jumlah rows affected: %v", err)
+	}
+	if rowsAffected == 0 {
+		return fmt.Errorf("isu strategis dengan ID %d tidak ditemukan", id)
+	}
+
+	return nil
 }
 
 func (repository *IsuStrategisRepositoryImpl) FindById(ctx context.Context, tx *sql.Tx, isuStrategisId int) (domain.IsuStrategis, error) {
