@@ -14,7 +14,7 @@ type IsuStrategisUpdateRequest struct {
 }
 
 type PermasalahanIsuStrategisUpdateRequest struct {
-	PermasalahanOpdId int                       `json:"permasalahan_opd_id"`
+	PermasalahanOpdId int                       `json:"id_permasalahan"`
 	DataDukung        []DataDukungUpdateRequest `json:"data_dukung"`
 }
 
