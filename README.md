@@ -27,6 +27,11 @@ go get github.com/labstack/echo/v4
 go get github.com/labstack/echo/v4/middleware
 ```
 
+- untuk migrasi db
+```
+flyway -url=jdbc:mysql://localhost:3306/db_permasalahan -user=root -password=agnar -locations=filesystem:./db/migrations migrate
+```
+
 
 ### Run server
 
