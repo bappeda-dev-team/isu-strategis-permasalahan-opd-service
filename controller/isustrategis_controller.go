@@ -8,4 +8,5 @@ type IsuStrategisController interface {
 	Delete(c echo.Context) error
 	FindById(c echo.Context) error
 	FindAll(c echo.Context) error
+	FindallIsuKebelakang(c echo.Context) error
 }

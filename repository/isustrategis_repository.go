@@ -18,4 +18,5 @@ type IsuStrategisRepository interface {
 	FindJumlahDataByDataDukungId(ctx context.Context, tx *sql.Tx, dataDukungId int) ([]domain.JumlahData, error)
 	DeleteJumlahDataByDataDukungId(ctx context.Context, tx *sql.Tx, dataDukungId int) error
 	DeleteDataDukungByPermasalahanId(ctx context.Context, tx *sql.Tx, permasalahanId int) error
+	FindallIsuKebelakang(ctx context.Context, tx *sql.Tx, kodeOpd string, tahun string) ([]domain.IsuStrategis, error)
 }

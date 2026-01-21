@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"permasalahanService/model/domain"
+	"sort"
 	"strconv"
 	"time"
 )
@@ -1019,4 +1020,243 @@ func (repository *IsuStrategisRepositoryImpl) DeleteDataDukungByPermasalahanId(c
 	affected, _ := result.RowsAffected()
 	log.Printf("[Repository] Deleted %d data dukung records", affected)
 	return nil
+}
+
+func (repository *IsuStrategisRepositoryImpl) FindallIsuKebelakang(ctx context.Context, tx *sql.Tx, kodeOpd string, tahun string) ([]domain.IsuStrategis, error) {
+	// Query utama yang sudah optimal dengan batch
+	query := `
+    SELECT 
+        iso.id,
+        iso.kode_opd,
+        iso.nama_opd,
+        iso.kode_bidang_urusan,
+        iso.nama_bidang_urusan,
+        iso.tahun_awal,
+        iso.tahun_akhir,
+        iso.isu_strategis,
+        iso.created_at,
+        p.id as permasalahan_id,
+        p.permasalahan,
+        p.kode_opd as p_kode_opd,
+        p.tahun as p_tahun,
+        p.level_pohon,
+        p.jenis_masalah,
+        dd.id as data_dukung_id,
+        dd.nama_data_dukung,
+        dd.narasi_data_dukung,
+        jd.id as jumlah_data_id,
+        jd.tahun as jumlah_data_tahun,
+        jd.jumlah as jumlah,
+        jd.satuan as satuan
+    FROM 
+        tb_isu_strategis_opd iso
+    LEFT JOIN 
+        tb_permasalahan_opd p ON p.isu_strategis_id = iso.id
+    LEFT JOIN 
+        tb_data_dukung dd ON dd.id_permasalahan = p.id
+    LEFT JOIN 
+        tb_jumlah_data jd ON jd.id_data_dukung = dd.id
+    WHERE 
+        iso.kode_opd = ?
+    ORDER BY 
+        iso.created_at ASC,
+        p.id, dd.id, jd.tahun DESC`
+
+	rows, err := tx.QueryContext(ctx, query, kodeOpd)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	// Batch processing dengan map
+	isuStrategisMap := make(map[int]*domain.IsuStrategis)
+	permasalahanMap := make(map[int]*domain.Permasalahan)
+	dataDukungMap := make(map[int]*domain.DataDukung)
+	jumlahDataMap := make(map[int]map[string]*domain.JumlahData) // Gunakan pointer
+
+	// Fungsi helper untuk generate 6 tahun ke belakang
+	generateYearRangeKebelakang := func(targetYear string) []string {
+		if targetYear == "" {
+			return []string{}
+		}
+		targetYearInt, _ := strconv.Atoi(targetYear)
+		years := make([]string, 0, 6) // Pre-allocate untuk optimasi
+		// Generate dari targetYear ke 5 tahun sebelumnya (total 6 tahun)
+		for i := 0; i < 6; i++ {
+			years = append(years, strconv.Itoa(targetYearInt-i))
+		}
+		return years
+	}
+
+	// Batch read dari database
+	for rows.Next() {
+		var (
+			isuStrategisId   int
+			kodeOpd          string
+			namaOpd          string
+			kodeBidangUrusan string
+			namaBidangUrusan string
+			tahunAwal        string
+			tahunAkhir       string
+			isuStrategis     string
+			createdAt        time.Time
+			permasalahanId   sql.NullInt64
+			permasalahan     sql.NullString
+			pKodeOpd         sql.NullString
+			pTahun           sql.NullString
+			levelPohon       sql.NullInt64
+			jenisMasalah     sql.NullString
+			dataDukungId     sql.NullInt64
+			namaDataDukung   sql.NullString
+			narasiDataDukung sql.NullString
+			jumlahDataId     sql.NullInt64
+			jumlahDataTahun  sql.NullString
+			jumlah           sql.NullFloat64
+			satuan           sql.NullString
+		)
+
+		err := rows.Scan(
+			&isuStrategisId, &kodeOpd, &namaOpd, &kodeBidangUrusan, &namaBidangUrusan,
+			&tahunAwal, &tahunAkhir, &isuStrategis, &createdAt, &permasalahanId, &permasalahan,
+			&pKodeOpd, &pTahun, &levelPohon, &jenisMasalah, &dataDukungId,
+			&namaDataDukung, &narasiDataDukung, &jumlahDataId, &jumlahDataTahun,
+			&jumlah, &satuan,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		// Batch processing: Get or create IsuStrategis
+		isuStr, exists := isuStrategisMap[isuStrategisId]
+		if !exists {
+			isuStr = &domain.IsuStrategis{
+				Id:               isuStrategisId,
+				KodeOpd:          kodeOpd,
+				NamaOpd:          namaOpd,
+				KodeBidangUrusan: kodeBidangUrusan,
+				NamaBidangUrusan: namaBidangUrusan,
+				TahunAwal:        tahunAwal,
+				TahunAkhir:       tahunAkhir,
+				IsuStrategis:     isuStrategis,
+				CreatedAt:        createdAt,
+				PermasalahanOpd:  make([]domain.Permasalahan, 0),
+			}
+			isuStrategisMap[isuStrategisId] = isuStr
+		}
+
+		// Batch processing: Handle Permasalahan
+		if permasalahanId.Valid {
+			permId := int(permasalahanId.Int64)
+			perm, exists := permasalahanMap[permId]
+			if !exists {
+				perm = &domain.Permasalahan{
+					Id:           permId,
+					Permasalahan: permasalahan.String,
+					KodeOpd:      pKodeOpd.String,
+					Tahun:        pTahun.String,
+					LevelPohon:   int(levelPohon.Int64),
+					JenisMasalah: jenisMasalah.String,
+					DataDukung:   make([]domain.DataDukung, 0),
+				}
+				permasalahanMap[permId] = perm
+				isuStr.PermasalahanOpd = append(isuStr.PermasalahanOpd, *perm)
+			}
+
+			// Batch processing: Handle DataDukung
+			if dataDukungId.Valid {
+				ddId := int(dataDukungId.Int64)
+
+				// Inisialisasi map jumlah data jika belum ada
+				if _, exists := jumlahDataMap[ddId]; !exists {
+					jumlahDataMap[ddId] = make(map[string]*domain.JumlahData)
+				}
+
+				// Simpan data jumlah data ke map (hanya jika ada data valid)
+				if jumlahDataId.Valid && jumlahDataTahun.Valid {
+					jumlahDataMap[ddId][jumlahDataTahun.String] = &domain.JumlahData{
+						Id:           int(jumlahDataId.Int64),
+						IdDataDukung: ddId,
+						Tahun:        jumlahDataTahun.String,
+						JumlahData:   jumlah.Float64,
+						Satuan:       satuan.String,
+					}
+				}
+
+				dd, exists := dataDukungMap[ddId]
+				if !exists {
+					dd = &domain.DataDukung{
+						Id:                ddId,
+						PermasalahanOpdId: permId,
+						DataDukung:        namaDataDukung.String,
+						NarasiDataDukung:  narasiDataDukung.String,
+						JumlahData:        make([]domain.JumlahData, 0),
+					}
+					dataDukungMap[ddId] = dd
+
+					// Tambahkan ke permasalahan yang benar (batch update)
+					for i := range isuStr.PermasalahanOpd {
+						if isuStr.PermasalahanOpd[i].Id == permId {
+							isuStr.PermasalahanOpd[i].DataDukung = append(isuStr.PermasalahanOpd[i].DataDukung, *dd)
+							break
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// Post-processing: Generate rentang tahun dan isi data (batch operation)
+	for _, isuStr := range isuStrategisMap {
+		for i, perm := range isuStr.PermasalahanOpd {
+			for j, dd := range perm.DataDukung {
+				var jumlahDataSlice []domain.JumlahData
+
+				if tahun != "" {
+					// Skenario 2: Filter by tahun dengan 6 tahun ke belakang
+					yearRange := generateYearRangeKebelakang(tahun)
+					jumlahDataSlice = make([]domain.JumlahData, 0, len(yearRange))
+
+					for _, year := range yearRange {
+						if data, exists := jumlahDataMap[dd.Id][year]; exists && data != nil {
+							// Data ada, gunakan data asli
+							jumlahDataSlice = append(jumlahDataSlice, *data)
+						} else {
+							// Data tidak ada, buat entry kosong (tanpa jumlah dan satuan)
+							jumlahDataSlice = append(jumlahDataSlice, domain.JumlahData{
+								Id:           0,
+								IdDataDukung: dd.Id,
+								Tahun:        year,
+								JumlahData:   0,  // Akan di-handle di response layer
+								Satuan:       "", // String kosong
+							})
+						}
+					}
+				} else {
+					// Skenario 1: Tampilkan semua tahun DESC
+					if dataMap, exists := jumlahDataMap[dd.Id]; exists {
+						jumlahDataSlice = make([]domain.JumlahData, 0, len(dataMap))
+						for _, data := range dataMap {
+							if data != nil {
+								jumlahDataSlice = append(jumlahDataSlice, *data)
+							}
+						}
+						// Sort DESC
+						sort.Slice(jumlahDataSlice, func(x, y int) bool {
+							return jumlahDataSlice[x].Tahun > jumlahDataSlice[y].Tahun
+						})
+					}
+				}
+
+				isuStr.PermasalahanOpd[i].DataDukung[j].JumlahData = jumlahDataSlice
+			}
+		}
+	}
+
+	// Convert map to slice (batch operation)
+	result := make([]domain.IsuStrategis, 0, len(isuStrategisMap))
+	for _, isuStr := range isuStrategisMap {
+		result = append(result, *isuStr)
+	}
+
+	return result, nil
 }

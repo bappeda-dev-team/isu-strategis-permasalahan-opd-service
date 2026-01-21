@@ -11,4 +11,5 @@ type IsuStrategisService interface {
 	Delete(ctx context.Context, id int) error
 	FindById(ctx context.Context, id int) (web.IsuStrategisResponse, error)
 	FindAll(ctx context.Context, kodeOpd string, tahunAwal string, tahunAkhir string) ([]web.IsuStrategisResponse, error)
+	FindallIsuKebelakang(ctx context.Context, kodeOpd string, tahun string) ([]web.IsuStrategisKebelakangResponse, error)
 }

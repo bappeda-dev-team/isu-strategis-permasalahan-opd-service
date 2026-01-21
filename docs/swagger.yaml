@@ -27,6 +27,21 @@ definitions:
       status:
         type: string
     type: object
+  web.DataDukungKebelakangResponse:
+    properties:
+      data_dukung:
+        type: string
+      id:
+        type: integer
+      jumlah_data:
+        items:
+          $ref: '#/definitions/web.JumlahDataKebelakangResponse'
+        type: array
+      narasi_data_dukung:
+        type: string
+      permasalahan_opd_id:
+        type: integer
+    type: object
   web.DataDukungRequest:
     properties:
       data_dukung:
@@ -105,6 +120,31 @@ definitions:
     - tahun_akhir
     - tahun_awal
     type: object
+  web.IsuStrategisKebelakangResponse:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: integer
+      isu_strategis:
+        type: string
+      kode_bidang_urusan:
+        type: string
+      kode_opd:
+        type: string
+      nama_bidang_urusan:
+        type: string
+      nama_opd:
+        type: string
+      permasalahan_opd:
+        items:
+          $ref: '#/definitions/web.PermasalahanKebelakangResponse'
+        type: array
+      tahun_akhir:
+        type: string
+      tahun_awal:
+        type: string
+    type: object
   web.IsuStrategisResponse:
     description: Response Isu Strategis
     properties:
@@ -163,6 +203,21 @@ definitions:
     - nama_opd
     - tahun_akhir
     - tahun_awal
+    type: object
+  web.JumlahDataKebelakangResponse:
+    properties:
+      id:
+        type: integer
+      id_data_dukung:
+        type: integer
+      jumlah_data:
+        type: number
+      satuan:
+        type: string
+      tahun:
+        type: string
+      tahun_sekarang:
+        type: boolean
     type: object
   web.JumlahDataRequest:
     properties:
@@ -241,8 +296,23 @@ definitions:
         items:
           $ref: '#/definitions/web.DataDukungUpdateRequest'
         type: array
-      permasalahan_opd_id:
+      id_permasalahan:
         type: integer
+    type: object
+  web.PermasalahanKebelakangResponse:
+    properties:
+      data_dukung:
+        items:
+          $ref: '#/definitions/web.DataDukungKebelakangResponse'
+        type: array
+      id:
+        type: integer
+      jenis_masalah:
+        type: string
+      level_pohon:
+        type: integer
+      masalah:
+        type: string
     type: object
   web.PermasalahanOpdRequest:
     properties:
@@ -369,7 +439,12 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/web.WebResponse'
+            allOf:
+            - $ref: '#/definitions/web.WebResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/web.IsuStrategisResponse'
+              type: object
         "400":
           description: Bad Request
           schema:
@@ -457,6 +532,45 @@ paths:
           schema:
             $ref: '#/definitions/web.WebResponse'
       summary: FindAll Isu Strategis
+      tags:
+      - Isu Strategis Service
+  /isu_strategis/kebelakang/{kode_opd}/{tahun}:
+    get:
+      consumes:
+      - application/json
+      description: FindallIsuKebelakang a isu strategis
+      parameters:
+      - description: Kode OPD
+        in: path
+        name: kode_opd
+        required: true
+        type: string
+      - description: Tahun
+        in: path
+        name: tahun
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/web.WebResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/web.IsuStrategisKebelakangResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/web.WebResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/web.WebResponse'
+      summary: FindallIsuKebelakang Isu Strategis
       tags:
       - Isu Strategis Service
   /permasalahan:

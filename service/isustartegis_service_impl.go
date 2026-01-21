@@ -463,3 +463,84 @@ func (service *IsuStrategisServiceImpl) deleteDataDukungAndJumlahData(ctx contex
 
 	return nil
 }
+
+func (service *IsuStrategisServiceImpl) FindallIsuKebelakang(ctx context.Context, kodeOpd string, tahun string) ([]web.IsuStrategisKebelakangResponse, error) {
+	// Logging awal
+	fmt.Printf("[Service] FindallIsuKebelakang - Start with params: kodeOpd=%s, tahun=%s\n", kodeOpd, tahun)
+
+	// Validasi input
+	if kodeOpd == "" {
+		fmt.Println("[Service] FindallIsuKebelakang - kodeOpd is empty")
+		return []web.IsuStrategisKebelakangResponse{}, nil
+	}
+
+	// Buat context dengan timeout
+	ctxWithTimeout, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+
+	// Mulai transaksi dengan retry mechanism
+	var isuStrategiss []web.IsuStrategisKebelakangResponse
+	maxRetries := 3
+	var lastErr error
+
+	for attempt := 1; attempt <= maxRetries; attempt++ {
+		fmt.Printf("[Service] FindallIsuKebelakang - Attempt %d of %d\n", attempt, maxRetries)
+
+		tx, err := service.DB.BeginTx(ctxWithTimeout, &sql.TxOptions{
+			Isolation: sql.LevelReadCommitted,
+			ReadOnly:  true,
+		})
+		if err != nil {
+			lastErr = fmt.Errorf("error starting transaction: %v", err)
+			if attempt == maxRetries {
+				fmt.Printf("[Service] FindallIsuKebelakang - Final attempt failed: %v\n", lastErr)
+				return nil, lastErr
+			}
+			time.Sleep(time.Duration(attempt) * 100 * time.Millisecond)
+			continue
+		}
+
+		// Eksekusi query
+		result, err := service.IsuStrategisRepository.FindallIsuKebelakang(ctxWithTimeout, tx, kodeOpd, tahun)
+		if err != nil {
+			tx.Rollback()
+			lastErr = err
+			if attempt == maxRetries {
+				fmt.Printf("[Service] FindallIsuKebelakang - Final attempt failed: %v\n", lastErr)
+				return nil, fmt.Errorf("error after %d retries: %v", maxRetries, lastErr)
+			}
+			time.Sleep(time.Duration(attempt) * 100 * time.Millisecond)
+			continue
+		}
+
+		// Commit transaksi
+		if err := tx.Commit(); err != nil {
+			lastErr = fmt.Errorf("error committing transaction: %v", err)
+			if attempt == maxRetries {
+				fmt.Printf("[Service] FindallIsuKebelakang - Final attempt failed: %v\n", lastErr)
+				return nil, lastErr
+			}
+			time.Sleep(time.Duration(attempt) * 100 * time.Millisecond)
+			continue
+		}
+
+		// Sort hasil berdasarkan created_at sebelum konversi ke response
+		sort.Slice(result, func(i, j int) bool {
+			return result[i].CreatedAt.Before(result[j].CreatedAt)
+		})
+
+		// Konversi ke response dengan tahun sekarang
+		isuStrategiss = helper.ToIsuStrategisKebelakangResponses(result, tahun)
+		fmt.Printf("[Service] FindallIsuKebelakang - Successfully retrieved and sorted %d records\n", len(isuStrategiss))
+		break
+	}
+
+	// Handle empty result
+	if len(isuStrategiss) == 0 {
+		fmt.Println("[Service] FindallIsuKebelakang - No records found")
+		return []web.IsuStrategisKebelakangResponse{}, nil
+	}
+
+	fmt.Println("[Service] FindallIsuKebelakang - Completed successfully")
+	return isuStrategiss, nil
+}

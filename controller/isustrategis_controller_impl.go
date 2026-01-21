@@ -200,3 +200,33 @@ func (controller *IsuStrategisControllerImpl) FindAll(c echo.Context) error {
 		Data:   isuStrategisResponse,
 	})
 }
+
+// FindallIsuKebelakang godoc
+// @Summary FindallIsuKebelakang Isu Strategis
+// @Description FindallIsuKebelakang a isu strategis
+// @Tags Isu Strategis Service
+// @Accept json
+// @Produce json
+// @Param kode_opd path string true "Kode OPD"
+// @Param tahun path string true "Tahun"
+// @Success 200 {object} web.WebResponse{data=web.IsuStrategisKebelakangResponse}
+// @Failure 400 {object} web.WebResponse
+// @Failure 500 {object} web.WebResponse
+// @Router /isu_strategis/kebelakang/{kode_opd}/{tahun} [get]
+func (controller *IsuStrategisControllerImpl) FindallIsuKebelakang(c echo.Context) error {
+	kodeOpd := c.Param("kode_opd")
+	tahun := c.Param("tahun")
+	isuStrategisResponse, err := controller.IsuStrategisService.FindallIsuKebelakang(c.Request().Context(), kodeOpd, tahun)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, web.WebResponse{
+			Code:   http.StatusInternalServerError,
+			Status: "Failed FindallIsuKebelakang Isu Strategis",
+			Data:   err.Error(),
+		})
+	}
+	return c.JSON(http.StatusOK, web.WebResponse{
+		Code:   http.StatusOK,
+		Status: "Success FindallIsuKebelakang Isu Strategis",
+		Data:   isuStrategisResponse,
+	})
+}

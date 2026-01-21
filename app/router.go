@@ -32,6 +32,7 @@ func NewRouter(permasalahanController controller.PermasalahanController, permasa
 	e.DELETE("/isu_strategis/:id", isuStrategisController.Delete)
 	e.GET("/isu_strategis/:id", isuStrategisController.FindById)
 	e.GET("/isu_strategis/:kode_opd/:tahun_awal/:tahun_akhir", isuStrategisController.FindAll)
+	e.GET("/isu_strategis/kebelakang/:kode_opd/:tahun", isuStrategisController.FindallIsuKebelakang)
 
 	return e
 }
