@@ -80,6 +80,7 @@ func (service *IsuStrategisServiceImpl) Create(ctx context.Context, request web.
 
 		dataDukung := make([]domain.DataDukung, len(p.DataDukung))
 		for j, dd := range p.DataDukung {
+			// 🔥 DEDUPLIKASI: Ambil jumlah data dan deduplikasi berdasarkan tahun
 			jumlahData := make([]domain.JumlahData, len(dd.JumlahData))
 			for k, jd := range dd.JumlahData {
 				jumlahData[k] = domain.JumlahData{
@@ -88,6 +89,9 @@ func (service *IsuStrategisServiceImpl) Create(ctx context.Context, request web.
 					Satuan:     jd.Satuan,
 				}
 			}
+
+			// 🔥 DEDUPLIKASI DI SINI
+			jumlahData = deduplicateJumlahData(jumlahData)
 
 			dataDukung[j] = domain.DataDukung{
 				DataDukung:       dd.DataDukung,
@@ -111,8 +115,8 @@ func (service *IsuStrategisServiceImpl) Create(ctx context.Context, request web.
 		NamaOpd:          request.NamaOpd,
 		KodeBidangUrusan: request.KodeBidangUrusan,
 		NamaBidangUrusan: request.NamaBidangUrusan,
-		TahunAwal:        request.TahunAwal,
-		TahunAkhir:       request.TahunAkhir,
+		TahunAwal:        "",
+		TahunAkhir:       "",
 		IsuStrategis:     request.IsuStrategis,
 		PermasalahanOpd:  permasalahanOpd,
 	}
@@ -191,8 +195,8 @@ func (service *IsuStrategisServiceImpl) Update(ctx context.Context, request web.
 		NamaOpd:          request.NamaOpd,
 		KodeBidangUrusan: request.KodeBidangUrusan,
 		NamaBidangUrusan: request.NamaBidangUrusan,
-		TahunAwal:        request.TahunAwal,
-		TahunAkhir:       request.TahunAkhir,
+		TahunAwal:        "",
+		TahunAkhir:       "",
 		IsuStrategis:     request.IsuStrategis,
 	}
 
@@ -280,6 +284,9 @@ func (service *IsuStrategisServiceImpl) Update(ctx context.Context, request web.
 					})
 				}
 			}
+
+			// 🔥 DEDUPLIKASI DI SINI
+			jumlahData = deduplicateJumlahData(jumlahData)
 
 			if dd.DataDukung != "" {
 				dataDukung = append(dataDukung, domain.DataDukung{
@@ -543,4 +550,29 @@ func (service *IsuStrategisServiceImpl) FindallIsuKebelakang(ctx context.Context
 
 	fmt.Println("[Service] FindallIsuKebelakang - Completed successfully")
 	return isuStrategiss, nil
+}
+
+func deduplicateJumlahData(jumlahData []domain.JumlahData) []domain.JumlahData {
+	// Map untuk tracking: tahun -> jumlah data
+	dataMap := make(map[string]domain.JumlahData)
+
+	// Loop data, yang terakhir akan overwrite yang sebelumnya
+	for _, jd := range jumlahData {
+		if jd.Tahun != "" { // Hanya process jika tahun tidak kosong
+			dataMap[jd.Tahun] = jd
+		}
+	}
+
+	// Convert map kembali ke slice
+	result := make([]domain.JumlahData, 0, len(dataMap))
+	for _, jd := range dataMap {
+		result = append(result, jd)
+	}
+
+	// Sort berdasarkan tahun DESC untuk konsistensi
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].Tahun > result[j].Tahun
+	})
+
+	return result
 }

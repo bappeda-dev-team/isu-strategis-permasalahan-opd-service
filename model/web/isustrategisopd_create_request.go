@@ -7,8 +7,8 @@ type IsuStrategisCreateRequest struct {
 	NamaOpd          string                   `json:"nama_opd" validate:"required"`
 	KodeBidangUrusan string                   `json:"kode_bidang_urusan" validate:"required"`
 	NamaBidangUrusan string                   `json:"nama_bidang_urusan" validate:"required"`
-	TahunAwal        string                   `json:"tahun_awal" validate:"required"`
-	TahunAkhir       string                   `json:"tahun_akhir" validate:"required"`
+	TahunAwal        string                   `json:"tahun_awal" `
+	TahunAkhir       string                   `json:"tahun_akhir" `
 	IsuStrategis     string                   `json:"isu_strategis" validate:"required"`
 	PermasalahanOpd  []PermasalahanOpdRequest `json:"permasalahan_opd"`
 }
