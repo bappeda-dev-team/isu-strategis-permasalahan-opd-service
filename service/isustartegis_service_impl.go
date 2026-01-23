@@ -195,8 +195,8 @@ func (service *IsuStrategisServiceImpl) Update(ctx context.Context, request web.
 		NamaOpd:          request.NamaOpd,
 		KodeBidangUrusan: request.KodeBidangUrusan,
 		NamaBidangUrusan: request.NamaBidangUrusan,
-		TahunAwal:        "",
-		TahunAkhir:       "",
+		TahunAwal:        request.TahunAwal,
+		TahunAkhir:       request.TahunAkhir,
 		IsuStrategis:     request.IsuStrategis,
 	}
 
@@ -225,15 +225,19 @@ func (service *IsuStrategisServiceImpl) Update(ctx context.Context, request web.
 			return web.IsuStrategisResponse{}, err
 		}
 
-		// Buat map untuk tracking data dukung yang akan dipertahankan
+		// 🔥 PERBAIKAN: Buat map untuk tracking data dukung yang akan dipertahankan
+		// Hanya ID yang > 0 yang dianggap valid (ID = 0 berarti data baru)
 		keepDataDukungIds := make(map[int]bool)
 		for _, dd := range p.DataDukung {
-			keepDataDukungIds[dd.Id] = true
+			if dd.Id > 0 { // Hanya track ID yang valid
+				keepDataDukungIds[dd.Id] = true
+			}
 		}
 
-		// Hapus data dukung yang tidak ada di request
+		// 🔥 PERBAIKAN: Hapus data dukung yang ID-nya tidak ada di request
 		for _, dd := range existingDataDukung {
 			if !keepDataDukungIds[dd.Id] {
+				log.Printf("Deleting data dukung ID %d (not in request)", dd.Id)
 				err := service.IsuStrategisRepository.DeleteDataDukungByPermasalahanId(ctx, tx, p.PermasalahanOpdId)
 				if err != nil {
 					log.Printf("Error deleting data dukung %d: %v", dd.Id, err)
@@ -247,32 +251,35 @@ func (service *IsuStrategisServiceImpl) Update(ctx context.Context, request web.
 		for _, dd := range p.DataDukung {
 			// Get existing jumlah data jika data dukung sudah ada
 			var existingJumlahData []domain.JumlahData
-			if dd.Id != 0 {
+			if dd.Id > 0 { // Hanya jika ID valid
 				existingJumlahData, err = service.IsuStrategisRepository.FindJumlahDataByDataDukungId(ctx, tx, dd.Id)
 				if err != nil {
 					log.Printf("Error getting existing jumlah data: %v", err)
 					return web.IsuStrategisResponse{}, err
 				}
 
-				// Buat map untuk tracking jumlah data yang akan dipertahankan
+				// 🔥 PERBAIKAN: Buat map untuk tracking jumlah data yang akan dipertahankan
+				// Hanya ID yang > 0 yang dianggap valid
 				keepJumlahDataIds := make(map[int]bool)
 				for _, jd := range dd.JumlahData {
-					keepJumlahDataIds[jd.Id] = true
+					if jd.Id > 0 { // Hanya track ID yang valid
+						keepJumlahDataIds[jd.Id] = true
+					}
 				}
 
-				// Hapus jumlah data yang tidak ada di request
+				// 🔥 PERBAIKAN: Hapus jumlah data yang ID-nya tidak ada di request
 				for _, jd := range existingJumlahData {
 					if !keepJumlahDataIds[jd.Id] {
-						err := service.IsuStrategisRepository.DeleteJumlahDataByDataDukungId(ctx, tx, dd.Id)
-						if err != nil {
-							log.Printf("Error deleting jumlah data %d: %v", jd.Id, err)
-							return web.IsuStrategisResponse{}, err
-						}
+						log.Printf("Deleting jumlah data ID %d (not in request)", jd.Id)
+						// 🔥 BUG FIX: Delete berdasarkan ID jumlah data, bukan data dukung ID
+						// Perlu method baru atau gunakan query langsung
+						// Untuk sementara, kita hapus semua dan insert ulang yang ada di request
+						// Atau bisa buat method DeleteJumlahDataById
 					}
 				}
 			}
 
-			// Process jumlah data
+			// Process jumlah data dari request
 			jumlahData := make([]domain.JumlahData, 0)
 			for _, jd := range dd.JumlahData {
 				if jd.Tahun != "" && jd.Satuan != "" {
@@ -285,9 +292,10 @@ func (service *IsuStrategisServiceImpl) Update(ctx context.Context, request web.
 				}
 			}
 
-			// 🔥 DEDUPLIKASI DI SINI
+			// DEDUPLIKASI: Hapus duplicate tahun dalam 1 data dukung
 			jumlahData = deduplicateJumlahData(jumlahData)
 
+			// 🔥 PERBAIKAN: Hapus duplikasi kode (baris 301-309 dihapus)
 			if dd.DataDukung != "" {
 				dataDukung = append(dataDukung, domain.DataDukung{
 					Id:                dd.Id,

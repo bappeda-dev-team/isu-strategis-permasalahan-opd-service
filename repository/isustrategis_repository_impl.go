@@ -433,17 +433,6 @@ func (repository *IsuStrategisRepositoryImpl) FindById(ctx context.Context, tx *
 	dataDukungMap := make(map[int]*domain.DataDukung)
 	jumlahDataMap := make(map[int]map[string]domain.JumlahData)
 
-	// Fungsi helper untuk generate tahun-tahun dalam rentang
-	generateYearRange := func(start, end string) []string {
-		startYear, _ := strconv.Atoi(start)
-		endYear, _ := strconv.Atoi(end)
-		years := make([]string, 0)
-		for year := endYear; year >= startYear; year-- {
-			years = append(years, strconv.Itoa(year))
-		}
-		return years
-	}
-
 	for rows.Next() {
 		var (
 			id               int
@@ -563,21 +552,20 @@ func (repository *IsuStrategisRepositoryImpl) FindById(ctx context.Context, tx *
 	// Setelah semua data terkumpul, generate rentang tahun dan isi data
 	for i, perm := range isuStrategis.PermasalahanOpd {
 		for j, dd := range perm.DataDukung {
-			yearRange := generateYearRange(isuStrategis.TahunAwal, isuStrategis.TahunAkhir)
+			// 🔥 PERBAIKAN: Tampilkan semua jumlah data yang ada, bukan berdasarkan rentang tahun
 			jumlahDataSlice := make([]domain.JumlahData, 0)
 
-			for _, year := range yearRange {
-				if data, exists := jumlahDataMap[dd.Id][year]; exists {
-					jumlahDataSlice = append(jumlahDataSlice, data)
-				} else {
-					// Jika tidak ada data untuk tahun tersebut, buat data kosong
-					jumlahDataSlice = append(jumlahDataSlice, domain.JumlahData{
-						IdDataDukung: dd.Id,
-						Tahun:        year,
-						JumlahData:   0,
-						Satuan:       "",
-					})
+			// Ambil semua jumlah data dari map (sudah terurut DESC berdasarkan query)
+			if dataMap, exists := jumlahDataMap[dd.Id]; exists {
+				// Convert map ke slice
+				for _, jd := range dataMap {
+					jumlahDataSlice = append(jumlahDataSlice, jd)
 				}
+
+				// Sort berdasarkan tahun DESC untuk konsistensi
+				sort.Slice(jumlahDataSlice, func(x, y int) bool {
+					return jumlahDataSlice[x].Tahun > jumlahDataSlice[y].Tahun
+				})
 			}
 
 			isuStrategis.PermasalahanOpd[i].DataDukung[j].JumlahData = jumlahDataSlice
