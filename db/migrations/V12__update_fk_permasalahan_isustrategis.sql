@@ -1,0 +1,9 @@
+ALTER TABLE tb_permasalahan_isu_strategis
+DROP FOREIGN KEY fk_permasalahan_isu_strategis_permasalahan_terpilih;
+
+ALTER TABLE tb_permasalahan_isu_strategis
+ADD CONSTRAINT fk_permasalahan_isu_strategis_permasalahan_opd
+FOREIGN KEY (id_permasalahan)
+REFERENCES tb_permasalahan_terpilih(permasalahan_opd_id)
+ON DELETE CASCADE
+ON UPDATE CASCADE;

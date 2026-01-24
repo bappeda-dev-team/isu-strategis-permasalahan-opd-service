@@ -1,0 +1,2 @@
+ALTER TABLE tb_permasalahan_terpilih
+ADD UNIQUE INDEX idx_unique_permasalahan_opd_id (permasalahan_opd_id);
