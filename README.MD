@@ -79,5 +79,5 @@ V2__create_table_b
 
 ###Migrate db
 ```sh
-flyway -url=jdbc:mysql://localhost:3306/db_permasalahan -user=root -password=agnar -locations=filesystem:./db/migrations migrate
+flyway -url=jdbc:mysql://localhost:3306/kab_mahulu_isu_strategis_opd_prod -user=root -password=79e1pbs8FNYWTA3zytd6KO25k4jcX0gJ -locations=filesystem:./db/migrations migrate
 ```
