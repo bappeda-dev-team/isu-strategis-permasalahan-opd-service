@@ -52,13 +52,8 @@ func (service *IsuStrategisServiceImpl) Create(ctx context.Context, request web.
 	}
 	defer helper.CommitOrRollback(tx)
 
-	permasalahanIds := make(map[int]bool)
-	for _, p := range request.PermasalahanOpd {
-		if permasalahanIds[p.IdPermasalahan] {
-			return web.IsuStrategisResponse{}, fmt.Errorf("permasalahan tidak boleh sama dalam 1(satu) isu strategis")
-		}
-		permasalahanIds[p.IdPermasalahan] = true
-	}
+	// 🔥 PERBAIKAN: Validasi duplikat berdasarkan permasalahan_terpilih_id, bukan permasalahan_opd_id
+	permasalahanTerpilihIds := make(map[int]bool)
 
 	// Convert request ke domain
 	permasalahanOpd := make([]domain.Permasalahan, len(request.PermasalahanOpd))
@@ -72,7 +67,13 @@ func (service *IsuStrategisServiceImpl) Create(ctx context.Context, request web.
 			return web.IsuStrategisResponse{}, fmt.Errorf("permasalahan dengan ID %d belum dipilih sebagai permasalahan terpilih", p.IdPermasalahan)
 		}
 
-		// 2. Validasi isu_strategis_id di permasalahan_opd
+		// 🔥 VALIDASI DUPLIKAT DI SINI (SETELAH DAPAT permasalahanTerpilih.Id)
+		if permasalahanTerpilihIds[permasalahanTerpilih.Id] {
+			return web.IsuStrategisResponse{}, fmt.Errorf("permasalahan tidak boleh sama dalam 1(satu) isu strategis")
+		}
+		permasalahanTerpilihIds[permasalahanTerpilih.Id] = true
+
+		// 2. Validasi permasalahan_opd exists (untuk ambil detail)
 		permasalahan, err := service.PermasalahanRepository.FindById(ctx, tx, strconv.Itoa(p.IdPermasalahan))
 		if err != nil {
 			return web.IsuStrategisResponse{}, fmt.Errorf("permasalahan dengan ID %d tidak ditemukan", p.IdPermasalahan)
@@ -104,7 +105,7 @@ func (service *IsuStrategisServiceImpl) Create(ctx context.Context, request web.
 		}
 
 		permasalahanOpd[i] = domain.Permasalahan{
-			Id:           permasalahan.Id,
+			Id:           permasalahanTerpilih.Id, // GUNAKAN ID PERMASALAHAN_TERPILIH
 			Tahun:        permasalahan.Tahun,
 			NamaOpd:      permasalahan.NamaOpd,
 			LevelPohon:   permasalahan.LevelPohon,
@@ -162,13 +163,18 @@ func (service *IsuStrategisServiceImpl) Update(ctx context.Context, request web.
 	permasalahanTerpilihIds := make(map[int]bool)
 	for _, p := range request.PermasalahanOpd {
 		if p.PermasalahanOpdId == 0 {
+			log.Printf("Warning: Found permasalahan with ID 0 in request")
 			continue
 		}
+
 		if permasalahanTerpilihIds[p.PermasalahanOpdId] {
-			return web.IsuStrategisResponse{}, fmt.Errorf("permasalahan tidak boleh sama dalam 1(satu) isu strategis")
+			log.Printf("ERROR: Duplicate permasalahan ID %d found in request", p.PermasalahanOpdId)
+			return web.IsuStrategisResponse{}, fmt.Errorf("permasalahan tidak boleh sama dalam 1(satu) isu strategis (ID duplikat: %d)", p.PermasalahanOpdId)
 		}
 		permasalahanTerpilihIds[p.PermasalahanOpdId] = true
 	}
+
+	log.Printf("Validation passed: %d unique permasalahan in request", len(permasalahanTerpilihIds))
 
 	// 2. Update isu strategis basic info
 	isuStrategis := domain.IsuStrategis{
@@ -184,23 +190,32 @@ func (service *IsuStrategisServiceImpl) Update(ctx context.Context, request web.
 
 	// 3. Process permasalahan
 	permasalahanOpd := make([]domain.Permasalahan, 0)
-	for _, p := range request.PermasalahanOpd {
+	for i, p := range request.PermasalahanOpd {
+		log.Printf("========================================")
+		log.Printf("Processing permasalahan #%d", i+1)
+		log.Printf("Request permasalahan_opd_id: %d", p.PermasalahanOpdId)
+		log.Printf("========================================")
+
 		if p.PermasalahanOpdId == 0 {
+			log.Printf("Skipping permasalahan #%d: ID is 0", i+1)
 			continue
 		}
 
-		// Validasi permasalahan terpilih exists
-		permasalahanTerpilih, err := service.PermasalahanTerpilihRepository.FindById(ctx, tx, p.PermasalahanOpdId)
+		// 🔥 PERBAIKAN: Gunakan FindByPermasalahanOpdId (seperti di CREATE)
+		// p.PermasalahanOpdId adalah ID dari tb_permasalahan_opd
+		permasalahanTerpilih, err := service.PermasalahanTerpilihRepository.FindByPermasalahanOpdId(ctx, tx, p.PermasalahanOpdId)
 		if err != nil {
-			log.Printf("Error finding permasalahan terpilih ID %d: %v", p.PermasalahanOpdId, err)
-			continue
+			log.Printf("ERROR finding permasalahan terpilih with permasalahan_opd_id %d: %v", p.PermasalahanOpdId, err)
+			return web.IsuStrategisResponse{}, fmt.Errorf("error mencari permasalahan terpilih dengan permasalahan_opd_id %d: %v", p.PermasalahanOpdId, err)
 		}
 		if permasalahanTerpilih.Id == 0 {
-			log.Printf("Permasalahan terpilih ID %d not found", p.PermasalahanOpdId)
-			continue
+			log.Printf("ERROR: Permasalahan dengan permasalahan_opd_id %d belum dipilih", p.PermasalahanOpdId)
+			return web.IsuStrategisResponse{}, fmt.Errorf("permasalahan dengan ID %d belum dipilih sebagai permasalahan terpilih", p.PermasalahanOpdId)
 		}
 
-		// Get permasalahan_opd_id dari permasalahan_terpilih
+		log.Printf("✅ Found permasalahan_terpilih ID %d for permasalahan_opd_id %d", permasalahanTerpilih.Id, p.PermasalahanOpdId)
+
+		// Get permasalahan_opd_id dari permasalahan_terpilih (sebenarnya sama dengan p.PermasalahanOpdId)
 		permasalahanOpdId := permasalahanTerpilih.PermasalahanOpdId
 
 		// 4. Get existing data dukung untuk permasalahan ini dan isu strategis ini
@@ -210,6 +225,8 @@ func (service *IsuStrategisServiceImpl) Update(ctx context.Context, request web.
 			return web.IsuStrategisResponse{}, err
 		}
 
+		log.Printf("Found %d existing data dukung for permasalahan_opd_id %d", len(existingDataDukung), permasalahanOpdId)
+
 		// Buat map untuk tracking data dukung yang akan dipertahankan
 		keepDataDukungIds := make(map[int]bool)
 		for _, dd := range p.DataDukung {
@@ -218,7 +235,7 @@ func (service *IsuStrategisServiceImpl) Update(ctx context.Context, request web.
 			}
 		}
 
-		// 🔥 Hapus data dukung yang ID-nya tidak ada di request (GUNAKAN REPOSITORY)
+		// Hapus data dukung yang ID-nya tidak ada di request (SATU PER SATU)
 		for _, dd := range existingDataDukung {
 			if !keepDataDukungIds[dd.Id] {
 				log.Printf("Deleting data dukung ID %d (not in request)", dd.Id)
@@ -230,7 +247,7 @@ func (service *IsuStrategisServiceImpl) Update(ctx context.Context, request web.
 					return web.IsuStrategisResponse{}, err
 				}
 
-				// Hapus data dukung spesifik by ID (via repository)
+				// Hapus data dukung spesifik by ID
 				err = service.IsuStrategisRepository.DeleteDataDukungById(ctx, tx, dd.Id)
 				if err != nil {
 					log.Printf("Error deleting data dukung %d: %v", dd.Id, err)
@@ -271,11 +288,15 @@ func (service *IsuStrategisServiceImpl) Update(ctx context.Context, request web.
 			}
 		}
 
+		log.Printf("Appending permasalahan #%d (ID: %d) with %d data dukung", i+1, p.PermasalahanOpdId, len(dataDukung))
+
 		permasalahanOpd = append(permasalahanOpd, domain.Permasalahan{
-			Id:         p.PermasalahanOpdId,
+			Id:         permasalahanTerpilih.Id,
 			DataDukung: dataDukung,
 		})
 	}
+
+	log.Printf("Total permasalahan processed: %d", len(permasalahanOpd))
 
 	isuStrategis.PermasalahanOpd = permasalahanOpd
 
