@@ -42,7 +42,7 @@ type ChildResponse struct {
 	IsPermasalahan       bool            `json:"is_permasalahan,omitempty"`
 	PermasalahanTerpilih bool            `json:"permasalahan_terpilih,omitempty"`
 	JenisMasalah         string          `json:"jenis_masalah"`
-	Status               string          `json:"status,omitempty"`
+	Status               string          `json:"status_permasalahan,omitempty"`
 	Childs               []ChildResponse `json:"childs,omitempty"`
 }
 

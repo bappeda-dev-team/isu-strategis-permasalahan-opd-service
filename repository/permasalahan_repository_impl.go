@@ -11,6 +11,7 @@ import (
 	"os"
 	"permasalahanService/model/domain"
 	"permasalahanService/model/web"
+	"strings"
 )
 
 type PermasalahanRepositoryImpl struct {
@@ -331,4 +332,73 @@ func (repository *PermasalahanRepositoryImpl) ResetIsuStrategisId(ctx context.Co
 	script := `UPDATE tb_permasalahan_opd SET isu_strategis_id = 0 WHERE id = ?`
 	_, err := tx.ExecContext(ctx, script, id)
 	return err
+}
+
+func (repository *PermasalahanRepositoryImpl) FindByIds(ctx context.Context, tx *sql.Tx, ids []int) ([]domain.Permasalahan, error) {
+	if len(ids) == 0 {
+		return []domain.Permasalahan{}, nil
+	}
+
+	// Build placeholders untuk IN clause: (?, ?, ?)
+	placeholders := make([]string, len(ids))
+	args := make([]interface{}, len(ids))
+	for i, id := range ids {
+		placeholders[i] = "?"
+		args[i] = id
+	}
+
+	query := fmt.Sprintf(`
+		SELECT 
+			id,
+			pokin_id,
+			permasalahan,
+			kode_opd,
+			nama_opd,
+			tahun,
+			level_pohon,
+			jenis_masalah,
+			isu_strategis_id,
+			COALESCE(status_permasalahan, '') as status_permasalahan
+		FROM tb_permasalahan_opd
+		WHERE id IN (%s)
+	`, strings.Join(placeholders, ","))
+
+	rows, err := tx.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	// Map untuk menyimpan hasil dengan ID sebagai key
+	permasalahanMap := make(map[int]domain.Permasalahan)
+
+	for rows.Next() {
+		var permasalahan domain.Permasalahan
+		err := rows.Scan(
+			&permasalahan.Id,
+			&permasalahan.PokinId,
+			&permasalahan.Permasalahan,
+			&permasalahan.KodeOpd,
+			&permasalahan.NamaOpd,
+			&permasalahan.Tahun,
+			&permasalahan.LevelPohon,
+			&permasalahan.JenisMasalah,
+			&permasalahan.IsuStrategis,
+			&permasalahan.StatusPermasalahan,
+		)
+		if err != nil {
+			return nil, err
+		}
+		permasalahanMap[permasalahan.Id] = permasalahan
+	}
+
+	// Return dalam order yang sama dengan input ids
+	result := make([]domain.Permasalahan, 0, len(ids))
+	for _, id := range ids {
+		if p, exists := permasalahanMap[id]; exists {
+			result = append(result, p)
+		}
+	}
+
+	return result, nil
 }

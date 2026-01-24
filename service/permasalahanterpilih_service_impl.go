@@ -94,6 +94,7 @@ func (service *PermasalahanTerpilihServiceImpl) Create(ctx context.Context, requ
 
 	return response, nil
 }
+
 func (service *PermasalahanTerpilihServiceImpl) FindAll(ctx context.Context, kodeOpd string, tahun string) ([]web.ChildResponse, error) {
 	tx, err := service.db.Begin()
 	if err != nil {
@@ -101,20 +102,43 @@ func (service *PermasalahanTerpilihServiceImpl) FindAll(ctx context.Context, kod
 	}
 	defer helper.CommitOrRollback(tx)
 
+	// 1. Get all permasalahan terpilih
 	permasalahanTerpilihs, err := service.permasalahanTerpilihRepository.FindAll(ctx, tx, kodeOpd, tahun)
 	if err != nil {
 		return nil, err
 	}
 
-	responses := []web.ChildResponse{}
+	if len(permasalahanTerpilihs) == 0 {
+		return []web.ChildResponse{}, nil
+	}
+
+	// 2. OPTIMASI: Collect all permasalahan IDs untuk batch query
+	permasalahanIds := make([]int, 0, len(permasalahanTerpilihs))
+	for _, pt := range permasalahanTerpilihs {
+		permasalahanIds = append(permasalahanIds, pt.PermasalahanOpdId)
+	}
+
+	// 3. OPTIMASI: Batch query - ambil semua permasalahan sekaligus
+	permasalahans, err := service.permasalahanRepository.FindByIds(ctx, tx, permasalahanIds)
+	if err != nil {
+		return nil, err
+	}
+
+	// 4. Buat map untuk quick lookup
+	permasalahanMap := make(map[int]domain.Permasalahan)
+	for _, p := range permasalahans {
+		permasalahanMap[p.Id] = p
+	}
+
+	// 5. Build responses
+	responses := make([]web.ChildResponse, 0, len(permasalahanTerpilihs))
 	for _, permasalahanTerpilih := range permasalahanTerpilihs {
-		permasalahan, err := service.permasalahanRepository.FindById(ctx, tx, strconv.Itoa(permasalahanTerpilih.PermasalahanOpdId))
-		if err != nil {
-			return nil, err
+		permasalahan, exists := permasalahanMap[permasalahanTerpilih.PermasalahanOpdId]
+		if !exists {
+			// Skip jika permasalahan tidak ditemukan
+			continue
 		}
-		if permasalahan.Id == 0 {
-			return nil, errors.New("permasalahan tidak ditemukan")
-		}
+
 		responses = append(responses, web.ChildResponse{
 			Id:             permasalahanTerpilih.Id,
 			IdPermasalahan: permasalahanTerpilih.PermasalahanOpdId,
@@ -125,8 +149,10 @@ func (service *PermasalahanTerpilihServiceImpl) FindAll(ctx context.Context, kod
 				NamaOpd: permasalahan.NamaOpd,
 			},
 			JenisMasalah: permasalahan.JenisMasalah,
+			Status:       permasalahan.StatusPermasalahan,
 		})
 	}
+
 	return responses, nil
 }
 

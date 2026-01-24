@@ -19,23 +19,6 @@ func NewIsuStrategisRepositoryImpl() *IsuStrategisRepositoryImpl {
 }
 
 func (repository *IsuStrategisRepositoryImpl) Create(ctx context.Context, tx *sql.Tx, isuStrategis domain.IsuStrategis) (domain.IsuStrategis, error) {
-	// Validasi semua permasalahan terlebih dahulu
-	for _, permasalahan := range isuStrategis.PermasalahanOpd {
-		// Cek status isu_strategis_id untuk setiap permasalahan
-		var currentIsuStrategisId int
-		script := `SELECT isu_strategis_id FROM tb_permasalahan_opd WHERE id = ?`
-		err := tx.QueryRowContext(ctx, script, permasalahan.Id).Scan(&currentIsuStrategisId)
-		if err != nil {
-			return domain.IsuStrategis{}, err
-		}
-
-		// Jika permasalahan sudah memiliki isu strategis, batalkan seluruh proses
-		if currentIsuStrategisId != 0 {
-			return domain.IsuStrategis{}, fmt.Errorf("permasalahan dengan ID %d sudah memiliki isu strategis", permasalahan.Id)
-		}
-	}
-
-	// Setelah semua validasi berhasil, baru insert isu strategis
 	script := `INSERT INTO tb_isu_strategis_opd 
                (kode_opd, nama_opd, kode_bidang_urusan, nama_bidang_urusan, tahun_awal, tahun_akhir, isu_strategis) 
                VALUES (?, ?, ?, ?, ?, ?, ?)`
@@ -59,31 +42,43 @@ func (repository *IsuStrategisRepositoryImpl) Create(ctx context.Context, tx *sq
 	}
 	isuStrategis.Id = int(id)
 
-	// Update permasalahan dan tambah data dukung
+	// Insert ke junction table dan update status permasalahan
 	for _, permasalahan := range isuStrategis.PermasalahanOpd {
-		// Update isu_strategis_id
-		script = `UPDATE tb_permasalahan_opd SET isu_strategis_id = ? WHERE id = ? AND isu_strategis_id = 0`
-		result, err = tx.ExecContext(ctx, script, isuStrategis.Id, permasalahan.Id)
+		// 1. Insert ke junction table
+		scriptJunction := `INSERT INTO tb_permasalahan_isu_strategis 
+		                   (id_permasalahan, id_isu_strategis) 
+		                   VALUES (?, ?)`
+		_, err = tx.ExecContext(ctx, scriptJunction, permasalahan.Id, isuStrategis.Id)
 		if err != nil {
 			return domain.IsuStrategis{}, err
 		}
 
-		rowsAffected, err := result.RowsAffected()
+		// 2. Ambil permasalahan_opd_id dari tb_permasalahan_terpilih
+		var permasalahanOpdId int
+		scriptGetOpdId := `SELECT permasalahan_opd_id FROM tb_permasalahan_terpilih WHERE id = ?`
+		err = tx.QueryRowContext(ctx, scriptGetOpdId, permasalahan.Id).Scan(&permasalahanOpdId)
 		if err != nil {
-			return domain.IsuStrategis{}, err
-		}
-		if rowsAffected == 0 {
-			return domain.IsuStrategis{}, fmt.Errorf("gagal mengupdate permasalahan dengan ID %d", permasalahan.Id)
+			return domain.IsuStrategis{}, fmt.Errorf("gagal mendapatkan permasalahan_opd_id: %v", err)
 		}
 
-		// Insert data dukung
+		// 3. Update status_permasalahan di tb_permasalahan_opd
+		scriptUpdateStatus := `UPDATE tb_permasalahan_opd 
+		                       SET status_permasalahan = 'digunakan' 
+		                       WHERE id = ?`
+		_, err = tx.ExecContext(ctx, scriptUpdateStatus, permasalahanOpdId)
+		if err != nil {
+			return domain.IsuStrategis{}, fmt.Errorf("gagal update status permasalahan: %v", err)
+		}
+
+		// 4. Insert data dukung dengan id_permasalahan DAN id_isu_strategis
 		for _, dataDukung := range permasalahan.DataDukung {
-			script = `INSERT INTO tb_data_dukung 
-                      (id_permasalahan, nama_data_dukung, narasi_data_dukung) 
-                      VALUES (?, ?, ?)`
+			scriptDD := `INSERT INTO tb_data_dukung 
+			             (id_permasalahan, id_isustrategis, nama_data_dukung, narasi_data_dukung) 
+			             VALUES (?, ?, ?, ?)`
 
-			result, err = tx.ExecContext(ctx, script,
-				permasalahan.Id,
+			resultDD, err := tx.ExecContext(ctx, scriptDD,
+				permasalahanOpdId,
+				isuStrategis.Id,
 				dataDukung.DataDukung,
 				dataDukung.NarasiDataDukung,
 			)
@@ -91,19 +86,19 @@ func (repository *IsuStrategisRepositoryImpl) Create(ctx context.Context, tx *sq
 				return domain.IsuStrategis{}, err
 			}
 
-			dataDukungId, err := result.LastInsertId()
+			dataDukungId, err := resultDD.LastInsertId()
 			if err != nil {
 				return domain.IsuStrategis{}, err
 			}
 
-			// Insert jumlah data
+			// 5. Insert jumlah data
 			for _, jumlahData := range dataDukung.JumlahData {
 				if jumlahData.Tahun != "" {
-					script = `INSERT INTO tb_jumlah_data 
-                              (id_data_dukung, tahun, jumlah, satuan) 
-                              VALUES (?, ?, ?, ?)`
+					scriptJD := `INSERT INTO tb_jumlah_data 
+					             (id_data_dukung, tahun, jumlah, satuan) 
+					             VALUES (?, ?, ?, ?)`
 
-					_, err = tx.ExecContext(ctx, script,
+					_, err = tx.ExecContext(ctx, scriptJD,
 						dataDukungId,
 						jumlahData.Tahun,
 						jumlahData.JumlahData,
@@ -134,17 +129,17 @@ func (repository *IsuStrategisRepositoryImpl) Update(ctx context.Context, tx *sq
 		return domain.IsuStrategis{}, fmt.Errorf("isu strategis dengan ID %d tidak ditemukan", isuStrategis.Id)
 	}
 
-	// 1. Update isu strategis
+	// 2. Update isu strategis basic info
 	scriptIsu := `UPDATE tb_isu_strategis_opd 
-                  SET kode_opd = ?, 
-                      nama_opd = ?, 
-                      kode_bidang_urusan = ?, 
-                      nama_bidang_urusan = ?, 
-                      tahun_awal = ?, 
-                      tahun_akhir = ?, 
-                      isu_strategis = ?,
-                      updated_at = CURRENT_TIMESTAMP
-                  WHERE id = ?`
+	              SET kode_opd = ?, 
+	                  nama_opd = ?, 
+	                  kode_bidang_urusan = ?, 
+	                  nama_bidang_urusan = ?, 
+	                  tahun_awal = ?, 
+	                  tahun_akhir = ?, 
+	                  isu_strategis = ?,
+	                  updated_at = CURRENT_TIMESTAMP
+	              WHERE id = ?`
 
 	log.Printf("[Repository] Executing update isu strategis query")
 	resultIsu, err := tx.ExecContext(ctx, scriptIsu,
@@ -173,51 +168,140 @@ func (repository *IsuStrategisRepositoryImpl) Update(ctx context.Context, tx *sq
 	}
 	log.Printf("[Repository] Updated %d rows in isu strategis", affected)
 
-	// 2. Update permasalahan
-	for _, permasalahan := range isuStrategis.PermasalahanOpd {
-		log.Printf("[Repository] Processing permasalahan ID: %d", permasalahan.Id)
+	// 3. Dapatkan permasalahan terpilih yang sudah ada di junction table
+	scriptGetExisting := `SELECT pt.id, pt.permasalahan_opd_id 
+	                      FROM tb_permasalahan_isu_strategis pis
+	                      INNER JOIN tb_permasalahan_terpilih pt ON pis.id_permasalahan = pt.id
+	                      WHERE pis.id_isu_strategis = ?`
 
-		// Validasi permasalahan exists
-		scriptValidate := "SELECT id FROM tb_permasalahan_opd WHERE id = ?"
-		var permId int
-		err := tx.QueryRowContext(ctx, scriptValidate, permasalahan.Id).Scan(&permId)
+	rows, err := tx.QueryContext(ctx, scriptGetExisting, isuStrategis.Id)
+	if err != nil {
+		log.Printf("[Repository] Error getting existing permasalahan: %v", err)
+		return domain.IsuStrategis{}, err
+	}
+
+	type ExistingPermasalahan struct {
+		PermasalahanTerpilihId int
+		PermasalahanOpdId      int
+	}
+
+	existingPermasalahan := make([]ExistingPermasalahan, 0)
+	for rows.Next() {
+		var ep ExistingPermasalahan
+		err := rows.Scan(&ep.PermasalahanTerpilihId, &ep.PermasalahanOpdId)
 		if err != nil {
-			if err == sql.ErrNoRows {
-				log.Printf("[Repository] Permasalahan ID %d not found", permasalahan.Id)
-				continue // Skip if not found
+			rows.Close()
+			return domain.IsuStrategis{}, err
+		}
+		existingPermasalahan = append(existingPermasalahan, ep)
+	}
+	rows.Close()
+
+	// 4. Buat map untuk tracking permasalahan yang akan dipertahankan
+	keepPermasalahanIds := make(map[int]bool)
+	for _, p := range isuStrategis.PermasalahanOpd {
+		keepPermasalahanIds[p.Id] = true
+	}
+
+	// 5. Hapus relasi dan reset status untuk permasalahan yang tidak ada di request
+	for _, ep := range existingPermasalahan {
+		if !keepPermasalahanIds[ep.PermasalahanTerpilihId] {
+			log.Printf("[Repository] Removing permasalahan terpilih ID %d from junction table", ep.PermasalahanTerpilihId)
+
+			// Hapus dari junction table
+			scriptDeleteJunction := `DELETE FROM tb_permasalahan_isu_strategis 
+			                         WHERE id_permasalahan = ? AND id_isu_strategis = ?`
+			_, err := tx.ExecContext(ctx, scriptDeleteJunction, ep.PermasalahanTerpilihId, isuStrategis.Id)
+			if err != nil {
+				log.Printf("[Repository] Error deleting from junction table: %v", err)
+				return domain.IsuStrategis{}, err
 			}
-			log.Printf("[Repository] Error validating permasalahan: %v", err)
-			return domain.IsuStrategis{}, err
+
+			// Reset status_permasalahan di tb_permasalahan_opd
+			scriptResetStatus := `UPDATE tb_permasalahan_opd 
+			                      SET status_permasalahan = '' 
+			                      WHERE id = ?`
+			_, err = tx.ExecContext(ctx, scriptResetStatus, ep.PermasalahanOpdId)
+			if err != nil {
+				log.Printf("[Repository] Error resetting status: %v", err)
+				return domain.IsuStrategis{}, err
+			}
+
+			// Hapus data dukung dan jumlah data
+			scriptDeleteDD := `DELETE FROM tb_data_dukung 
+			WHERE id_permasalahan = ? 
+			AND id_isustrategis = ?`
+			_, err = tx.ExecContext(ctx, scriptDeleteDD, ep.PermasalahanOpdId, isuStrategis.Id)
+			if err != nil {
+				log.Printf("[Repository] Error deleting data dukung: %v", err)
+				return domain.IsuStrategis{}, err
+			}
 		}
+	}
 
-		// Update isu_strategis_id di permasalahan
-		scriptPermasalahan := `UPDATE tb_permasalahan_opd 
-                              SET isu_strategis_id = ? 
-                              WHERE id = ?`
+	// 6. Proses permasalahan baru atau yang sudah ada
+	for _, permasalahan := range isuStrategis.PermasalahanOpd {
+		log.Printf("[Repository] Processing permasalahan terpilih ID: %d", permasalahan.Id)
 
-		resultPerm, err := tx.ExecContext(ctx, scriptPermasalahan, isuStrategis.Id, permasalahan.Id)
+		// Cek apakah sudah ada di junction table
+		var existsInJunction int
+		scriptCheckJunction := `SELECT COUNT(*) FROM tb_permasalahan_isu_strategis 
+		                        WHERE id_permasalahan = ? AND id_isu_strategis = ?`
+		err := tx.QueryRowContext(ctx, scriptCheckJunction, permasalahan.Id, isuStrategis.Id).Scan(&existsInJunction)
 		if err != nil {
-			log.Printf("[Repository] Error updating permasalahan: %v", err)
 			return domain.IsuStrategis{}, err
 		}
 
-		affectedPerm, _ := resultPerm.RowsAffected()
-		log.Printf("[Repository] Updated %d rows in permasalahan", affectedPerm)
+		// Jika belum ada, insert ke junction table
+		if existsInJunction == 0 {
+			// Insert ke junction table
+			scriptInsertJunction := `INSERT INTO tb_permasalahan_isu_strategis 
+			                         (id_permasalahan, id_isu_strategis) 
+			                         VALUES (?, ?)`
+			_, err = tx.ExecContext(ctx, scriptInsertJunction, permasalahan.Id, isuStrategis.Id)
+			if err != nil {
+				log.Printf("[Repository] Error inserting to junction table: %v", err)
+				return domain.IsuStrategis{}, err
+			}
+		}
 
-		// 3. Handle data dukung
+		// Ambil permasalahan_opd_id dari tb_permasalahan_terpilih
+		var permasalahanOpdId int
+		scriptGetOpdId := `SELECT permasalahan_opd_id FROM tb_permasalahan_terpilih WHERE id = ?`
+		err = tx.QueryRowContext(ctx, scriptGetOpdId, permasalahan.Id).Scan(&permasalahanOpdId)
+		if err != nil {
+			return domain.IsuStrategis{}, fmt.Errorf("gagal mendapatkan permasalahan_opd_id: %v", err)
+		}
+
+		// Update status_permasalahan
+		scriptUpdateStatus := `UPDATE tb_permasalahan_opd 
+		                       SET status_permasalahan = 'digunakan' 
+		                       WHERE id = ?`
+		_, err = tx.ExecContext(ctx, scriptUpdateStatus, permasalahanOpdId)
+		if err != nil {
+			return domain.IsuStrategis{}, fmt.Errorf("gagal update status permasalahan: %v", err)
+		}
+
+		// 7. Handle data dukung (sama seperti sebelumnya, tapi gunakan permasalahanOpdId)
 		for _, dataDukung := range permasalahan.DataDukung {
-			log.Printf("[Repository] Processing data dukung for permasalahan ID: %d", permasalahan.Id)
+			log.Printf("[Repository] Processing data dukung for permasalahan OPD ID: %d", permasalahanOpdId)
 
 			var dataDukungId int64
 			if dataDukung.Id != 0 {
-				// Validasi data dukung exists
-				scriptValidateDD := "SELECT id FROM tb_data_dukung WHERE id = ? AND id_permasalahan = ?"
+				// 🔥 PERBAIKAN: Validasi dengan id_permasalahan DAN id_isu_strategis
+				scriptValidateDD := `SELECT id FROM tb_data_dukung 
+									 WHERE id = ? 
+									 AND id_permasalahan = ? 
+									 AND id_isustrategis = ?`
 				var ddId int
-				err := tx.QueryRowContext(ctx, scriptValidateDD, dataDukung.Id, permasalahan.Id).Scan(&ddId)
+				err := tx.QueryRowContext(ctx, scriptValidateDD,
+					dataDukung.Id,
+					permasalahanOpdId,
+					isuStrategis.Id).Scan(&ddId)
 				if err != nil {
 					if err == sql.ErrNoRows {
-						log.Printf("[Repository] Data dukung ID %d not found for permasalahan ID %d", dataDukung.Id, permasalahan.Id)
-						continue // Skip if not found
+						log.Printf("[Repository] Data dukung ID %d not found", dataDukung.Id)
+						continue
 					}
 					log.Printf("[Repository] Error validating data dukung: %v", err)
 					return domain.IsuStrategis{}, err
@@ -225,17 +309,20 @@ func (repository *IsuStrategisRepositoryImpl) Update(ctx context.Context, tx *sq
 
 				// Update existing data dukung
 				scriptDataDukung := `UPDATE tb_data_dukung 
-                                   SET nama_data_dukung = ?, 
-                                       narasi_data_dukung = ?,
-                                       updated_at = CURRENT_TIMESTAMP
-                                   WHERE id = ? AND id_permasalahan = ?`
+									 SET nama_data_dukung = ?, 
+										 narasi_data_dukung = ?,
+										 updated_at = CURRENT_TIMESTAMP
+									 WHERE id = ? 
+									 AND id_permasalahan = ? 
+									 AND id_isustrategis = ?`
 
 				log.Printf("[Repository] Updating existing data dukung ID: %d", dataDukung.Id)
 				resultDD, err := tx.ExecContext(ctx, scriptDataDukung,
 					dataDukung.DataDukung,
 					dataDukung.NarasiDataDukung,
 					dataDukung.Id,
-					permasalahan.Id,
+					permasalahanOpdId,
+					isuStrategis.Id, // 🔥 Tambahan
 				)
 				if err != nil {
 					log.Printf("[Repository] Error updating data dukung: %v", err)
@@ -246,14 +333,15 @@ func (repository *IsuStrategisRepositoryImpl) Update(ctx context.Context, tx *sq
 				affected, _ := resultDD.RowsAffected()
 				log.Printf("[Repository] Updated %d rows in data dukung", affected)
 			} else {
-				// Insert new data dukung
+				// 🔥 PERBAIKAN: Insert dengan id_isu_strategis
 				scriptNewDD := `INSERT INTO tb_data_dukung 
-                               (id_permasalahan, nama_data_dukung, narasi_data_dukung, created_at, updated_at) 
-                               VALUES (?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`
+								(id_permasalahan, id_isustrategis, nama_data_dukung, narasi_data_dukung, created_at, updated_at) 
+								VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`
 
 				log.Printf("[Repository] Inserting new data dukung")
 				resultNewDD, err := tx.ExecContext(ctx, scriptNewDD,
-					permasalahan.Id,
+					permasalahanOpdId,
+					isuStrategis.Id, // 🔥 Tambahan
 					dataDukung.DataDukung,
 					dataDukung.NarasiDataDukung,
 				)
@@ -270,31 +358,30 @@ func (repository *IsuStrategisRepositoryImpl) Update(ctx context.Context, tx *sq
 				log.Printf("[Repository] Inserted new data dukung with ID: %d", dataDukungId)
 			}
 
-			// 4. Handle jumlah data
+			// 8. Handle jumlah data (sama seperti sebelumnya)
 			for _, jumlahData := range dataDukung.JumlahData {
 				log.Printf("[Repository] Processing jumlah data for data dukung ID: %d", dataDukungId)
 
 				if jumlahData.Id != 0 {
-					// Validasi jumlah data exists
+					// Update existing jumlah data
 					scriptValidateJD := "SELECT id FROM tb_jumlah_data WHERE id = ? AND id_data_dukung = ?"
 					var jdId int
 					err := tx.QueryRowContext(ctx, scriptValidateJD, jumlahData.Id, dataDukungId).Scan(&jdId)
 					if err != nil {
 						if err == sql.ErrNoRows {
 							log.Printf("[Repository] Jumlah data ID %d not found for data dukung ID %d", jumlahData.Id, dataDukungId)
-							continue // Skip if not found
+							continue
 						}
 						log.Printf("[Repository] Error validating jumlah data: %v", err)
 						return domain.IsuStrategis{}, err
 					}
 
-					// Update existing jumlah data
 					scriptJD := `UPDATE tb_jumlah_data 
-                                SET tahun = ?, 
-                                    jumlah = ?, 
-                                    satuan = ?,
-                                    updated_at = CURRENT_TIMESTAMP
-                                WHERE id = ? AND id_data_dukung = ?`
+					             SET tahun = ?, 
+					                 jumlah = ?, 
+					                 satuan = ?,
+					                 updated_at = CURRENT_TIMESTAMP
+					             WHERE id = ? AND id_data_dukung = ?`
 
 					log.Printf("[Repository] Updating existing jumlah data ID: %d", jumlahData.Id)
 					resultJD, err := tx.ExecContext(ctx, scriptJD,
@@ -314,8 +401,8 @@ func (repository *IsuStrategisRepositoryImpl) Update(ctx context.Context, tx *sq
 				} else {
 					// Insert new jumlah data
 					scriptNewJD := `INSERT INTO tb_jumlah_data 
-                                  (id_data_dukung, tahun, jumlah, satuan, created_at, updated_at) 
-                                  VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`
+					                (id_data_dukung, tahun, jumlah, satuan, created_at, updated_at) 
+					                VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`
 
 					log.Printf("[Repository] Inserting new jumlah data")
 					resultNewJD, err := tx.ExecContext(ctx, scriptNewJD,
@@ -352,32 +439,57 @@ func (repository *IsuStrategisRepositoryImpl) Update(ctx context.Context, tx *sq
 }
 
 func (repository *IsuStrategisRepositoryImpl) Delete(ctx context.Context, tx *sql.Tx, id int) error {
-	// Update isu_strategis_id menjadi 0 di tb_permasalahan_opd
-	scriptUpdate := "UPDATE tb_permasalahan_opd SET isu_strategis_id = 0 WHERE isu_strategis_id = ?"
-	result, err := tx.ExecContext(ctx, scriptUpdate, id)
+	// 1. Ambil semua permasalahan_opd_id yang terkait
+	scriptGetOpdIds := `
+		SELECT DISTINCT p.id 
+		FROM tb_permasalahan_isu_strategis pis
+		INNER JOIN tb_permasalahan_terpilih pt ON pis.id_permasalahan = pt.id
+		INNER JOIN tb_permasalahan_opd p ON pt.permasalahan_opd_id = p.id
+		WHERE pis.id_isu_strategis = ?`
+
+	rows, err := tx.QueryContext(ctx, scriptGetOpdIds, id)
 	if err != nil {
-		return fmt.Errorf("gagal mengupdate permasalahan: %v", err)
+		return fmt.Errorf("gagal mendapatkan permasalahan opd: %v", err)
 	}
 
-	// Log jumlah permasalahan yang diupdate
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("gagal mendapatkan jumlah rows affected: %v", err)
+	var opdIds []int
+	for rows.Next() {
+		var opdId int
+		if err := rows.Scan(&opdId); err != nil {
+			rows.Close()
+			return fmt.Errorf("gagal scan opd id: %v", err)
+		}
+		opdIds = append(opdIds, opdId)
 	}
-	log.Printf("Berhasil mengupdate %d permasalahan", rowsAffected)
+	rows.Close()
 
-	// Hapus isu strategis
+	// 2. Reset status_permasalahan untuk semua permasalahan yang terkait
+	for _, opdId := range opdIds {
+		scriptResetStatus := "UPDATE tb_permasalahan_opd SET status_permasalahan = '' WHERE id = ?"
+		_, err := tx.ExecContext(ctx, scriptResetStatus, opdId)
+		if err != nil {
+			return fmt.Errorf("gagal reset status permasalahan: %v", err)
+		}
+	}
+
+	// 3. Hapus dari junction table (CASCADE akan menghapus isu strategis)
+	scriptDeleteJunction := "DELETE FROM tb_permasalahan_isu_strategis WHERE id_isu_strategis = ?"
+	result, err := tx.ExecContext(ctx, scriptDeleteJunction, id)
+	if err != nil {
+		return fmt.Errorf("gagal menghapus dari junction table: %v", err)
+	}
+
+	rowsAffected, _ := result.RowsAffected()
+	log.Printf("Berhasil menghapus %d relasi di junction table", rowsAffected)
+
+	// 4. Hapus isu strategis
 	scriptDelete := "DELETE FROM tb_isu_strategis_opd WHERE id = ?"
 	result, err = tx.ExecContext(ctx, scriptDelete, id)
 	if err != nil {
 		return fmt.Errorf("gagal menghapus isu strategis: %v", err)
 	}
 
-	// Pastikan isu strategis berhasil dihapus
-	rowsAffected, err = result.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("gagal mendapatkan jumlah rows affected: %v", err)
-	}
+	rowsAffected, _ = result.RowsAffected()
 	if rowsAffected == 0 {
 		return fmt.Errorf("isu strategis dengan ID %d tidak ditemukan", id)
 	}
@@ -387,40 +499,45 @@ func (repository *IsuStrategisRepositoryImpl) Delete(ctx context.Context, tx *sq
 
 func (repository *IsuStrategisRepositoryImpl) FindById(ctx context.Context, tx *sql.Tx, isuStrategisId int) (domain.IsuStrategis, error) {
 	query := `
-        SELECT 
-            iso.id,
-            iso.kode_opd,
-            iso.nama_opd,
-            iso.kode_bidang_urusan,
-            iso.nama_bidang_urusan,
-            iso.tahun_awal,
-            iso.tahun_akhir,
-            iso.isu_strategis,
-            p.id as permasalahan_id,
-            p.permasalahan,
-            p.kode_opd as p_kode_opd,
-            p.tahun as p_tahun,
-            p.level_pohon,
-            p.jenis_masalah,
-            dd.id as data_dukung_id,
-            dd.nama_data_dukung,
-            dd.narasi_data_dukung,
-            jd.id as jumlah_data_id,
-            jd.tahun as jumlah_data_tahun,
-            COALESCE(jd.jumlah, 0.0) as jumlah,
-            COALESCE(jd.satuan, '') as satuan
-        FROM 
-            tb_isu_strategis_opd iso
-        LEFT JOIN 
-            tb_permasalahan_opd p ON p.isu_strategis_id = iso.id
-        LEFT JOIN 
-            tb_data_dukung dd ON dd.id_permasalahan = p.id
-        LEFT JOIN 
-            tb_jumlah_data jd ON jd.id_data_dukung = dd.id
-        WHERE 
-            iso.id = ?
-        ORDER BY 
-            iso.id, p.id, dd.id, jd.tahun DESC`
+	SELECT 
+		iso.id,
+		iso.kode_opd,
+		iso.nama_opd,
+		iso.kode_bidang_urusan,
+		iso.nama_bidang_urusan,
+		iso.tahun_awal,
+		iso.tahun_akhir,
+		iso.isu_strategis,
+		pt.id as permasalahan_terpilih_id,
+		p.id as permasalahan_id,
+		p.permasalahan,
+		p.kode_opd as p_kode_opd,
+		p.tahun as p_tahun,
+		p.level_pohon,
+		p.jenis_masalah,
+		dd.id as data_dukung_id,
+		dd.nama_data_dukung,
+		dd.narasi_data_dukung,
+		jd.id as jumlah_data_id,
+		jd.tahun as jumlah_data_tahun,
+		COALESCE(jd.jumlah, 0.0) as jumlah,
+		COALESCE(jd.satuan, '') as satuan
+	FROM 
+		tb_isu_strategis_opd iso
+	LEFT JOIN 
+		tb_permasalahan_isu_strategis pis ON pis.id_isu_strategis = iso.id
+	LEFT JOIN 
+		tb_permasalahan_terpilih pt ON pis.id_permasalahan = pt.id
+	LEFT JOIN 
+		tb_permasalahan_opd p ON pt.permasalahan_opd_id = p.id
+	LEFT JOIN 
+		tb_data_dukung dd ON dd.id_permasalahan = p.id AND dd.id_isustrategis = iso.id
+	LEFT JOIN 
+		tb_jumlah_data jd ON jd.id_data_dukung = dd.id
+	WHERE 
+		iso.id = ?
+	ORDER BY 
+		iso.id, pt.id, p.id, dd.id, jd.tahun DESC`
 
 	rows, err := tx.QueryContext(ctx, query, isuStrategisId)
 	if err != nil {
@@ -435,32 +552,34 @@ func (repository *IsuStrategisRepositoryImpl) FindById(ctx context.Context, tx *
 
 	for rows.Next() {
 		var (
-			id               int
-			kodeOpd          string
-			namaOpd          string
-			kodeBidangUrusan string
-			namaBidangUrusan string
-			tahunAwal        string
-			tahunAkhir       string
-			isuStrategisText string
-			permasalahanId   sql.NullInt64
-			permasalahan     sql.NullString
-			pKodeOpd         sql.NullString
-			pTahun           sql.NullString
-			levelPohon       sql.NullInt64
-			jenisMasalah     sql.NullString
-			dataDukungId     sql.NullInt64
-			namaDataDukung   sql.NullString
-			narasiDataDukung sql.NullString
-			jumlahDataId     sql.NullInt64
-			jumlahDataTahun  sql.NullString
-			jumlah           sql.NullFloat64
-			satuan           sql.NullString
+			id                     int
+			kodeOpd                string
+			namaOpd                string
+			kodeBidangUrusan       string
+			namaBidangUrusan       string
+			tahunAwal              string
+			tahunAkhir             string
+			isuStrategisText       string
+			permasalahanTerpilihId sql.NullInt64
+			permasalahanId         sql.NullInt64
+			permasalahan           sql.NullString
+			pKodeOpd               sql.NullString
+			pTahun                 sql.NullString
+			levelPohon             sql.NullInt64
+			jenisMasalah           sql.NullString
+			dataDukungId           sql.NullInt64
+			namaDataDukung         sql.NullString
+			narasiDataDukung       sql.NullString
+			jumlahDataId           sql.NullInt64
+			jumlahDataTahun        sql.NullString
+			jumlah                 sql.NullFloat64
+			satuan                 sql.NullString
 		)
 
 		err := rows.Scan(
 			&id, &kodeOpd, &namaOpd, &kodeBidangUrusan, &namaBidangUrusan,
-			&tahunAwal, &tahunAkhir, &isuStrategisText, &permasalahanId, &permasalahan,
+			&tahunAwal, &tahunAkhir, &isuStrategisText, &permasalahanTerpilihId,
+			&permasalahanId, &permasalahan,
 			&pKodeOpd, &pTahun, &levelPohon, &jenisMasalah, &dataDukungId,
 			&namaDataDukung, &narasiDataDukung, &jumlahDataId, &jumlahDataTahun,
 			&jumlah, &satuan,
@@ -484,7 +603,7 @@ func (repository *IsuStrategisRepositoryImpl) FindById(ctx context.Context, tx *
 			}
 		}
 
-		// Handle Permasalahan
+		// Handle Permasalahan (gunakan permasalahan_id dari tb_permasalahan_opd)
 		if permasalahanId.Valid {
 			permId := int(permasalahanId.Int64)
 			perm, exists := permasalahanMap[permId]
@@ -527,6 +646,7 @@ func (repository *IsuStrategisRepositoryImpl) FindById(ctx context.Context, tx *
 					dd = &domain.DataDukung{
 						Id:                ddId,
 						PermasalahanOpdId: permId,
+						IdIsuStrategis:    id,
 						DataDukung:        namaDataDukung.String,
 						NarasiDataDukung:  narasiDataDukung.String,
 						JumlahData:        make([]domain.JumlahData, 0),
@@ -549,20 +669,18 @@ func (repository *IsuStrategisRepositoryImpl) FindById(ctx context.Context, tx *
 		return domain.IsuStrategis{}, nil
 	}
 
-	// Setelah semua data terkumpul, generate rentang tahun dan isi data
+	// Setelah semua data terkumpul, isi jumlah data
 	for i, perm := range isuStrategis.PermasalahanOpd {
 		for j, dd := range perm.DataDukung {
-			// 🔥 PERBAIKAN: Tampilkan semua jumlah data yang ada, bukan berdasarkan rentang tahun
 			jumlahDataSlice := make([]domain.JumlahData, 0)
 
-			// Ambil semua jumlah data dari map (sudah terurut DESC berdasarkan query)
+			// Ambil semua jumlah data dari map
 			if dataMap, exists := jumlahDataMap[dd.Id]; exists {
-				// Convert map ke slice
 				for _, jd := range dataMap {
 					jumlahDataSlice = append(jumlahDataSlice, jd)
 				}
 
-				// Sort berdasarkan tahun DESC untuk konsistensi
+				// Sort berdasarkan tahun DESC
 				sort.Slice(jumlahDataSlice, func(x, y int) bool {
 					return jumlahDataSlice[x].Tahun > jumlahDataSlice[y].Tahun
 				})
@@ -613,7 +731,7 @@ func (repository *IsuStrategisRepositoryImpl) getJumlahDataByDataDukungId(ctx co
 
 // Fungsi untuk mencari data dukung berdasarkan ID
 func (repository *IsuStrategisRepositoryImpl) FindDataDukungById(ctx context.Context, tx *sql.Tx, dataDukungId int) (domain.DataDukung, error) {
-	script := `SELECT id, id_permasalahan, nama_data_dukung, narasi_data_dukung 
+	script := `SELECT id, id_permasalahan, id_isustrategis, nama_data_dukung, narasi_data_dukung 
                FROM tb_data_dukung 
                WHERE id = ?`
 
@@ -628,6 +746,7 @@ func (repository *IsuStrategisRepositoryImpl) FindDataDukungById(ctx context.Con
 		err := rows.Scan(
 			&dataDukung.Id,
 			&dataDukung.PermasalahanOpdId,
+			&dataDukung.IdIsuStrategis,
 			&dataDukung.DataDukung,
 			&dataDukung.NarasiDataDukung,
 		)
@@ -705,7 +824,7 @@ func (repository *IsuStrategisRepositoryImpl) FindAll(ctx context.Context, tx *s
     LEFT JOIN 
         tb_permasalahan_opd p ON p.isu_strategis_id = iso.id
     LEFT JOIN 
-        tb_data_dukung dd ON dd.id_permasalahan = p.id
+        tb_data_dukung dd ON dd.id_permasalahan = p.id AND dd.id_isustrategis = iso.id
     LEFT JOIN 
         tb_jumlah_data jd ON jd.id_data_dukung = dd.id
     WHERE 
@@ -836,6 +955,7 @@ func (repository *IsuStrategisRepositoryImpl) FindAll(ctx context.Context, tx *s
 					dd = &domain.DataDukung{
 						Id:                ddId,
 						PermasalahanOpdId: permId,
+						IdIsuStrategis:    isuStrategisId,
 						DataDukung:        namaDataDukung.String,
 						NarasiDataDukung:  narasiDataDukung.String,
 						JumlahData:        make([]domain.JumlahData, 0),
@@ -888,11 +1008,11 @@ func (repository *IsuStrategisRepositoryImpl) FindAll(ctx context.Context, tx *s
 	return result, nil
 }
 
-func (repository *IsuStrategisRepositoryImpl) FindDataDukungByPermasalahanId(ctx context.Context, tx *sql.Tx, permasalahanId int) ([]domain.DataDukung, error) {
-	script := `SELECT id, id_permasalahan, nama_data_dukung, narasi_data_dukung 
+func (repository *IsuStrategisRepositoryImpl) FindDataDukungByPermasalahanIdAndIsuStrategisId(ctx context.Context, tx *sql.Tx, permasalahanId int, isuStrategisId int) ([]domain.DataDukung, error) {
+	script := `SELECT id, id_permasalahan, id_isustrategis, nama_data_dukung, narasi_data_dukung 
                FROM tb_data_dukung 
-               WHERE id_permasalahan = ?`
-	rows, err := tx.QueryContext(ctx, script, permasalahanId)
+               WHERE id_permasalahan = ? AND id_isustrategis = ?`
+	rows, err := tx.QueryContext(ctx, script, permasalahanId, isuStrategisId)
 	if err != nil {
 		return nil, err
 	}
@@ -901,7 +1021,7 @@ func (repository *IsuStrategisRepositoryImpl) FindDataDukungByPermasalahanId(ctx
 	var result []domain.DataDukung
 	for rows.Next() {
 		var dataDukung domain.DataDukung
-		err := rows.Scan(&dataDukung.Id, &dataDukung.PermasalahanOpdId, &dataDukung.DataDukung, &dataDukung.NarasiDataDukung)
+		err := rows.Scan(&dataDukung.Id, &dataDukung.PermasalahanOpdId, &dataDukung.IdIsuStrategis, &dataDukung.DataDukung, &dataDukung.NarasiDataDukung)
 		if err != nil {
 			return nil, err
 		}
@@ -910,11 +1030,11 @@ func (repository *IsuStrategisRepositoryImpl) FindDataDukungByPermasalahanId(ctx
 	return result, nil
 }
 
-func (repository *IsuStrategisRepositoryImpl) DeleteDataDukung(ctx context.Context, tx *sql.Tx, idPermasalahan int) error {
-	log.Printf("[Repository] Deleting all data dukung for permasalahan ID: %d", idPermasalahan)
+func (repository *IsuStrategisRepositoryImpl) DeleteDataDukungByPermasalahanAndIsuStrategis(ctx context.Context, tx *sql.Tx, permasalahanId int, isuStrategisId int) error {
+	log.Printf("[Repository] Deleting data dukung for permasalahan ID: %d and isu strategis ID: %d", permasalahanId, isuStrategisId)
 
-	script := "DELETE FROM tb_data_dukung WHERE id_permasalahan = ?"
-	result, err := tx.ExecContext(ctx, script, idPermasalahan)
+	script := "DELETE FROM tb_data_dukung WHERE id_permasalahan = ? AND id_isustrategis = ?"
+	result, err := tx.ExecContext(ctx, script, permasalahanId, isuStrategisId)
 	if err != nil {
 		log.Printf("[Repository] Error deleting data dukung: %v", err)
 		return err
@@ -1011,7 +1131,7 @@ func (repository *IsuStrategisRepositoryImpl) DeleteDataDukungByPermasalahanId(c
 }
 
 func (repository *IsuStrategisRepositoryImpl) FindallIsuKebelakang(ctx context.Context, tx *sql.Tx, kodeOpd string, tahun string) ([]domain.IsuStrategis, error) {
-	// Query utama yang sudah optimal dengan batch
+	// Query dengan permasalahan_terpilih_id
 	query := `
     SELECT 
         iso.id,
@@ -1023,7 +1143,8 @@ func (repository *IsuStrategisRepositoryImpl) FindallIsuKebelakang(ctx context.C
         iso.tahun_akhir,
         iso.isu_strategis,
         iso.created_at,
-        p.id as permasalahan_id,
+        pt.id as permasalahan_terpilih_id,
+        p.id as permasalahan_opd_id,
         p.permasalahan,
         p.kode_opd as p_kode_opd,
         p.tahun as p_tahun,
@@ -1038,17 +1159,21 @@ func (repository *IsuStrategisRepositoryImpl) FindallIsuKebelakang(ctx context.C
         jd.satuan as satuan
     FROM 
         tb_isu_strategis_opd iso
+	LEFT JOIN 
+	 	tb_permasalahan_isu_strategis pis ON pis.id_isu_strategis = iso.id
+	LEFT JOIN 
+		tb_permasalahan_terpilih pt ON pis.id_permasalahan = pt.id
+	LEFT JOIN 
+		tb_permasalahan_opd p ON pt.permasalahan_opd_id = p.id
     LEFT JOIN 
-        tb_permasalahan_opd p ON p.isu_strategis_id = iso.id
-    LEFT JOIN 
-        tb_data_dukung dd ON dd.id_permasalahan = p.id
+        tb_data_dukung dd ON dd.id_permasalahan = p.id AND dd.id_isustrategis = iso.id
     LEFT JOIN 
         tb_jumlah_data jd ON jd.id_data_dukung = dd.id
     WHERE 
         iso.kode_opd = ?
     ORDER BY 
         iso.created_at ASC,
-        p.id, dd.id, jd.tahun DESC`
+        pt.id, p.id, dd.id, jd.tahun DESC`
 
 	rows, err := tx.QueryContext(ctx, query, kodeOpd)
 	if err != nil {
@@ -1060,7 +1185,7 @@ func (repository *IsuStrategisRepositoryImpl) FindallIsuKebelakang(ctx context.C
 	isuStrategisMap := make(map[int]*domain.IsuStrategis)
 	permasalahanMap := make(map[int]*domain.Permasalahan)
 	dataDukungMap := make(map[int]*domain.DataDukung)
-	jumlahDataMap := make(map[int]map[string]*domain.JumlahData) // Gunakan pointer
+	jumlahDataMap := make(map[int]map[string]*domain.JumlahData)
 
 	// Fungsi helper untuk generate 6 tahun ke belakang
 	generateYearRangeKebelakang := func(targetYear string) []string {
@@ -1068,8 +1193,7 @@ func (repository *IsuStrategisRepositoryImpl) FindallIsuKebelakang(ctx context.C
 			return []string{}
 		}
 		targetYearInt, _ := strconv.Atoi(targetYear)
-		years := make([]string, 0, 6) // Pre-allocate untuk optimasi
-		// Generate dari targetYear ke 5 tahun sebelumnya (total 6 tahun)
+		years := make([]string, 0, 6)
 		for i := 0; i < 6; i++ {
 			years = append(years, strconv.Itoa(targetYearInt-i))
 		}
@@ -1079,33 +1203,35 @@ func (repository *IsuStrategisRepositoryImpl) FindallIsuKebelakang(ctx context.C
 	// Batch read dari database
 	for rows.Next() {
 		var (
-			isuStrategisId   int
-			kodeOpd          string
-			namaOpd          string
-			kodeBidangUrusan string
-			namaBidangUrusan string
-			tahunAwal        string
-			tahunAkhir       string
-			isuStrategis     string
-			createdAt        time.Time
-			permasalahanId   sql.NullInt64
-			permasalahan     sql.NullString
-			pKodeOpd         sql.NullString
-			pTahun           sql.NullString
-			levelPohon       sql.NullInt64
-			jenisMasalah     sql.NullString
-			dataDukungId     sql.NullInt64
-			namaDataDukung   sql.NullString
-			narasiDataDukung sql.NullString
-			jumlahDataId     sql.NullInt64
-			jumlahDataTahun  sql.NullString
-			jumlah           sql.NullFloat64
-			satuan           sql.NullString
+			isuStrategisId         int
+			kodeOpd                string
+			namaOpd                string
+			kodeBidangUrusan       string
+			namaBidangUrusan       string
+			tahunAwal              string
+			tahunAkhir             string
+			isuStrategis           string
+			createdAt              time.Time
+			permasalahanTerpilihId sql.NullInt64
+			permasalahanOpdId      sql.NullInt64
+			permasalahan           sql.NullString
+			pKodeOpd               sql.NullString
+			pTahun                 sql.NullString
+			levelPohon             sql.NullInt64
+			jenisMasalah           sql.NullString
+			dataDukungId           sql.NullInt64
+			namaDataDukung         sql.NullString
+			narasiDataDukung       sql.NullString
+			jumlahDataId           sql.NullInt64
+			jumlahDataTahun        sql.NullString
+			jumlah                 sql.NullFloat64
+			satuan                 sql.NullString
 		)
 
 		err := rows.Scan(
 			&isuStrategisId, &kodeOpd, &namaOpd, &kodeBidangUrusan, &namaBidangUrusan,
-			&tahunAwal, &tahunAkhir, &isuStrategis, &createdAt, &permasalahanId, &permasalahan,
+			&tahunAwal, &tahunAkhir, &isuStrategis, &createdAt,
+			&permasalahanTerpilihId, &permasalahanOpdId, &permasalahan,
 			&pKodeOpd, &pTahun, &levelPohon, &jenisMasalah, &dataDukungId,
 			&namaDataDukung, &narasiDataDukung, &jumlahDataId, &jumlahDataTahun,
 			&jumlah, &satuan,
@@ -1114,7 +1240,7 @@ func (repository *IsuStrategisRepositoryImpl) FindallIsuKebelakang(ctx context.C
 			return nil, err
 		}
 
-		// Batch processing: Get or create IsuStrategis
+		// Get or create IsuStrategis
 		isuStr, exists := isuStrategisMap[isuStrategisId]
 		if !exists {
 			isuStr = &domain.IsuStrategis{
@@ -1132,13 +1258,18 @@ func (repository *IsuStrategisRepositoryImpl) FindallIsuKebelakang(ctx context.C
 			isuStrategisMap[isuStrategisId] = isuStr
 		}
 
-		// Batch processing: Handle Permasalahan
-		if permasalahanId.Valid {
-			permId := int(permasalahanId.Int64)
-			perm, exists := permasalahanMap[permId]
+		// Handle Permasalahan - GUNAKAN permasalahanTerpilihId sebagai key
+		if permasalahanTerpilihId.Valid {
+			permTerpilihId := int(permasalahanTerpilihId.Int64)
+
+			// Buat unique key: isuStrategisId + permTerpilihId
+			// Karena permasalahan yang sama bisa di multiple isu strategis
+			uniqueKey := isuStrategisId*10000 + permTerpilihId
+
+			perm, exists := permasalahanMap[uniqueKey]
 			if !exists {
 				perm = &domain.Permasalahan{
-					Id:           permId,
+					Id:           permTerpilihId,
 					Permasalahan: permasalahan.String,
 					KodeOpd:      pKodeOpd.String,
 					Tahun:        pTahun.String,
@@ -1146,11 +1277,11 @@ func (repository *IsuStrategisRepositoryImpl) FindallIsuKebelakang(ctx context.C
 					JenisMasalah: jenisMasalah.String,
 					DataDukung:   make([]domain.DataDukung, 0),
 				}
-				permasalahanMap[permId] = perm
+				permasalahanMap[uniqueKey] = perm
 				isuStr.PermasalahanOpd = append(isuStr.PermasalahanOpd, *perm)
 			}
 
-			// Batch processing: Handle DataDukung
+			// Handle DataDukung
 			if dataDukungId.Valid {
 				ddId := int(dataDukungId.Int64)
 
@@ -1159,7 +1290,7 @@ func (repository *IsuStrategisRepositoryImpl) FindallIsuKebelakang(ctx context.C
 					jumlahDataMap[ddId] = make(map[string]*domain.JumlahData)
 				}
 
-				// Simpan data jumlah data ke map (hanya jika ada data valid)
+				// Simpan data jumlah data ke map
 				if jumlahDataId.Valid && jumlahDataTahun.Valid {
 					jumlahDataMap[ddId][jumlahDataTahun.String] = &domain.JumlahData{
 						Id:           int(jumlahDataId.Int64),
@@ -1174,16 +1305,17 @@ func (repository *IsuStrategisRepositoryImpl) FindallIsuKebelakang(ctx context.C
 				if !exists {
 					dd = &domain.DataDukung{
 						Id:                ddId,
-						PermasalahanOpdId: permId,
+						PermasalahanOpdId: int(permasalahanOpdId.Int64),
+						IdIsuStrategis:    isuStrategisId,
 						DataDukung:        namaDataDukung.String,
 						NarasiDataDukung:  narasiDataDukung.String,
 						JumlahData:        make([]domain.JumlahData, 0),
 					}
 					dataDukungMap[ddId] = dd
 
-					// Tambahkan ke permasalahan yang benar (batch update)
+					// Tambahkan ke permasalahan yang benar
 					for i := range isuStr.PermasalahanOpd {
-						if isuStr.PermasalahanOpd[i].Id == permId {
+						if isuStr.PermasalahanOpd[i].Id == permTerpilihId {
 							isuStr.PermasalahanOpd[i].DataDukung = append(isuStr.PermasalahanOpd[i].DataDukung, *dd)
 							break
 						}
@@ -1193,7 +1325,7 @@ func (repository *IsuStrategisRepositoryImpl) FindallIsuKebelakang(ctx context.C
 		}
 	}
 
-	// Post-processing: Generate rentang tahun dan isi data (batch operation)
+	// Post-processing: Generate rentang tahun dan isi data
 	for _, isuStr := range isuStrategisMap {
 		for i, perm := range isuStr.PermasalahanOpd {
 			for j, dd := range perm.DataDukung {
@@ -1206,16 +1338,14 @@ func (repository *IsuStrategisRepositoryImpl) FindallIsuKebelakang(ctx context.C
 
 					for _, year := range yearRange {
 						if data, exists := jumlahDataMap[dd.Id][year]; exists && data != nil {
-							// Data ada, gunakan data asli
 							jumlahDataSlice = append(jumlahDataSlice, *data)
 						} else {
-							// Data tidak ada, buat entry kosong (tanpa jumlah dan satuan)
 							jumlahDataSlice = append(jumlahDataSlice, domain.JumlahData{
 								Id:           0,
 								IdDataDukung: dd.Id,
 								Tahun:        year,
-								JumlahData:   0,  // Akan di-handle di response layer
-								Satuan:       "", // String kosong
+								JumlahData:   0,
+								Satuan:       "",
 							})
 						}
 					}
@@ -1228,7 +1358,6 @@ func (repository *IsuStrategisRepositoryImpl) FindallIsuKebelakang(ctx context.C
 								jumlahDataSlice = append(jumlahDataSlice, *data)
 							}
 						}
-						// Sort DESC
 						sort.Slice(jumlahDataSlice, func(x, y int) bool {
 							return jumlahDataSlice[x].Tahun > jumlahDataSlice[y].Tahun
 						})
@@ -1240,11 +1369,26 @@ func (repository *IsuStrategisRepositoryImpl) FindallIsuKebelakang(ctx context.C
 		}
 	}
 
-	// Convert map to slice (batch operation)
+	// Convert map to slice
 	result := make([]domain.IsuStrategis, 0, len(isuStrategisMap))
 	for _, isuStr := range isuStrategisMap {
 		result = append(result, *isuStr)
 	}
 
 	return result, nil
+}
+
+func (repository *IsuStrategisRepositoryImpl) DeleteDataDukungById(ctx context.Context, tx *sql.Tx, dataDukungId int) error {
+	log.Printf("[Repository] Deleting data dukung with ID: %d", dataDukungId)
+
+	script := "DELETE FROM tb_data_dukung WHERE id = ?"
+	result, err := tx.ExecContext(ctx, script, dataDukungId)
+	if err != nil {
+		log.Printf("[Repository] Error deleting data dukung: %v", err)
+		return err
+	}
+
+	affected, _ := result.RowsAffected()
+	log.Printf("[Repository] Deleted %d data dukung records", affected)
+	return nil
 }

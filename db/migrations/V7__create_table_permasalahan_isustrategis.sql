@@ -1,0 +1,7 @@
+CREATE TABLE tb_permasalahan_isu_strategis (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    id_permasalahan INT NOT NULL,
+    id_isu_strategis INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB;

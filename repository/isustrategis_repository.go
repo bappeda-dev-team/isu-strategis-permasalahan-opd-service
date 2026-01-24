@@ -14,9 +14,10 @@ type IsuStrategisRepository interface {
 	Delete(ctx context.Context, tx *sql.Tx, id int) error
 	FindDataDukungById(ctx context.Context, tx *sql.Tx, dataDukungId int) (domain.DataDukung, error)
 	FindJumlahDataById(ctx context.Context, tx *sql.Tx, jumlahDataId int) (domain.JumlahData, error)
-	FindDataDukungByPermasalahanId(ctx context.Context, tx *sql.Tx, permasalahanId int) ([]domain.DataDukung, error)
+	FindDataDukungByPermasalahanIdAndIsuStrategisId(ctx context.Context, tx *sql.Tx, permasalahanId int, isuStrategisId int) ([]domain.DataDukung, error)
 	FindJumlahDataByDataDukungId(ctx context.Context, tx *sql.Tx, dataDukungId int) ([]domain.JumlahData, error)
 	DeleteJumlahDataByDataDukungId(ctx context.Context, tx *sql.Tx, dataDukungId int) error
-	DeleteDataDukungByPermasalahanId(ctx context.Context, tx *sql.Tx, permasalahanId int) error
+	DeleteDataDukungByPermasalahanAndIsuStrategis(ctx context.Context, tx *sql.Tx, permasalahanId int, isuStrategisId int) error
 	FindallIsuKebelakang(ctx context.Context, tx *sql.Tx, kodeOpd string, tahun string) ([]domain.IsuStrategis, error)
+	DeleteDataDukungById(ctx context.Context, tx *sql.Tx, dataDukungId int) error
 }

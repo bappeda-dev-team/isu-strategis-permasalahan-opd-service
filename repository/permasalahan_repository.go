@@ -19,4 +19,5 @@ type PermasalahanRepository interface {
 	IsPermasalahanTerpilih(ctx context.Context, tx *sql.Tx, idPermasalahan int) (bool, error)
 	FindByIsuStrategisId(ctx context.Context, tx *sql.Tx, isuStrategisId int) ([]domain.Permasalahan, error)
 	ResetIsuStrategisId(ctx context.Context, tx *sql.Tx, id int) error
+	FindByIds(ctx context.Context, tx *sql.Tx, ids []int) ([]domain.Permasalahan, error)
 }
