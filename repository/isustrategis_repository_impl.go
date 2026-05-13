@@ -798,7 +798,7 @@ func (repository *IsuStrategisRepositoryImpl) FindAll(ctx context.Context, tx *s
     FROM 
         tb_isu_strategis_opd iso
     LEFT JOIN 
-        tb_permasalahan_opd p ON p.isu_strategis_id = iso.id
+        tb_permasalahan_opd p ON p.kode_opd = iso.kode_opd
     LEFT JOIN 
         tb_data_dukung dd ON dd.id_permasalahan = p.id AND dd.id_isustrategis = iso.id
     LEFT JOIN 
