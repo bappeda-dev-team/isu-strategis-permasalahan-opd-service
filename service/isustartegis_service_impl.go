@@ -120,8 +120,8 @@ func (service *IsuStrategisServiceImpl) Create(ctx context.Context, request web.
 		NamaOpd:          request.NamaOpd,
 		KodeBidangUrusan: request.KodeBidangUrusan,
 		NamaBidangUrusan: request.NamaBidangUrusan,
-		TahunAwal:        "",
-		TahunAkhir:       "",
+		TahunAwal:        request.TahunAwal,
+		TahunAkhir:       request.TahunAkhir,
 		IsuStrategis:     request.IsuStrategis,
 		PermasalahanOpd:  permasalahanOpd,
 	}
