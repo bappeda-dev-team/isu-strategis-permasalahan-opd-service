@@ -579,7 +579,7 @@ func (repository *IsuStrategisRepositoryImpl) FindById(ctx context.Context, tx *
 
 		err := rows.Scan(
 			&id, &kodeOpd, &namaOpd, &kodeBidangUrusan, &namaBidangUrusan,
-			&tahunAwal, &tahunAkhir, &potensiPerangkatDaerah, isuKlhs, 
+			&tahunAwal, &tahunAkhir, &potensiPerangkatDaerah, &isuKlhs, 
 			&isuGlobal, &isuNasional, &isuRegional, &isuStrategisText,
 			&permasalahanId, &permasalahan,
 			&pKodeOpd, &pTahun, &levelPohon, &jenisMasalah, &dataDukungId,
