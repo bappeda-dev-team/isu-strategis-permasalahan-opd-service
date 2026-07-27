@@ -122,6 +122,11 @@ func (service *IsuStrategisServiceImpl) Create(ctx context.Context, request web.
 		NamaBidangUrusan: request.NamaBidangUrusan,
 		TahunAwal:        request.TahunAwal,
 		TahunAkhir:       request.TahunAkhir,
+		PotensiPerangkatDaerah:       request.PotensiPerangkatDaerah,
+		IsuKlhs:       request.IsuKlhs,
+		IsuGlobal:       request.IsuGlobal,
+		IsuNasional:       request.IsuNasional,
+		IsuRegional:       request.IsuRegional,
 		IsuStrategis:     request.IsuStrategis,
 		PermasalahanOpd:  permasalahanOpd,
 	}
@@ -180,6 +185,11 @@ func (service *IsuStrategisServiceImpl) Update(ctx context.Context, request web.
 		NamaBidangUrusan: request.NamaBidangUrusan,
 		TahunAwal:        request.TahunAwal,
 		TahunAkhir:       request.TahunAkhir,
+		PotensiPerangkatDaerah:       request.PotensiPerangkatDaerah,
+		IsuKlhs:       request.IsuKlhs,
+		IsuGlobal:       request.IsuGlobal,
+		IsuNasional:       request.IsuNasional,
+		IsuRegional:       request.IsuRegional,
 		IsuStrategis:     request.IsuStrategis,
 	}
 
