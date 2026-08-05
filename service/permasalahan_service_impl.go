@@ -46,10 +46,24 @@ func (service *PermasalahanServiceImpl) Create(ctx context.Context, request web.
 		return web.ChildResponse{}, err
 	}
 	if existingPermasalahan.Id != 0 {
-		return web.ChildResponse{}, errors.New("pokin_id sudah digunakan")
+		// update bila exist
+		updateRequest := web.PermasalahanUpdateRequest{
+			Id:           existingPermasalahan.Id,
+			Permasalahan: request.Permasalahan,
+			LevelPohon:   request.LevelPohon,
+			KodeOpd:      request.KodeOpd,
+			NamaOpd:      request.NamaOpd,
+			Tahun:        request.Tahun,
+		}
+		response, err := service.Update(ctx, updateRequest)
+		if err != nil {
+			return web.ChildResponse{}, err
+		}
+
+		return response, nil
 	}
 
-	permasalahan := domain.Permasalahan{
+	permasalahanReq := domain.Permasalahan{
 		PokinId:      request.PokinId,
 		Permasalahan: request.Permasalahan,
 		LevelPohon:   request.LevelPohon,
@@ -59,7 +73,7 @@ func (service *PermasalahanServiceImpl) Create(ctx context.Context, request web.
 		JenisMasalah: string(jenisMasalah),
 	}
 
-	permasalahan, err = service.permasalahanRepository.Create(ctx, tx, permasalahan)
+	permasalahan, err := service.permasalahanRepository.Create(ctx, tx, permasalahanReq)
 	if err != nil {
 		return web.ChildResponse{}, err
 	}
