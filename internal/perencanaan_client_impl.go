@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 )
 
 type PerencanaanClientImpl struct {
@@ -14,9 +15,11 @@ type PerencanaanClientImpl struct {
 }
 
 func NewPerencanaanClient(httpClient *http.Client) *PerencanaanClientImpl {
+	perencanaanHost := os.Getenv("PERENCANAAN_HOST")
 	return &PerencanaanClientImpl{
 		BaseClient: newBaseClient(
-			"https://api-perencanaan-dev-mahulu.zeabur.app",
+			perencanaanHost,
+			// "https://api-perencanaan-dev-mahulu.zeabur.app",
 			"",
 			httpClient,
 		),
