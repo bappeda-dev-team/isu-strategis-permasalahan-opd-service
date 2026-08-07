@@ -1,0 +1,5 @@
+ALTER TABLE tb_isu_strategis_opd
+MODIFY COLUMN isu_klhs TEXT NOT NULL,
+MODIFY COLUMN isu_global TEXT NOT NULL,
+MODIFY COLUMN isu_nasional TEXT NOT NULL,
+MODIFY COLUMN isu_regional TEXT NOT NULL;
