@@ -31,7 +31,7 @@ func (c *PerencanaanClientImpl) GetPotensiPerangkatDaerah(ctx context.Context, i
 	url := fmt.Sprintf("%s/ppd/find-by-ids", c.host)
 	// body kode program unggulans
 	payload := FindByIdsRequest{
-		Id: ids,
+		Ids: ids,
 	}
 	jsonBody, err := json.Marshal(payload)
 	if err != nil {
@@ -76,7 +76,7 @@ func (c *PerencanaanClientImpl) GetIsuKlhs(ctx context.Context, ids []int) ([]Is
 	url := fmt.Sprintf("%s/isu-klhs/find-by-ids", c.host)
 	// body kode program unggulans
 	payload := FindByIdsRequest{
-		Id: ids,
+		Ids: ids,
 	}
 	jsonBody, err := json.Marshal(payload)
 	if err != nil {
@@ -121,7 +121,7 @@ func (c *PerencanaanClientImpl) GetIsuGlobal(ctx context.Context, ids []int) ([]
 	url := fmt.Sprintf("%s/isu-global/find-by-ids", c.host)
 	// body kode program unggulans
 	payload := FindByIdsRequest{
-		Id: ids,
+		Ids: ids,
 	}
 	jsonBody, err := json.Marshal(payload)
 	if err != nil {
@@ -166,7 +166,7 @@ func (c *PerencanaanClientImpl) GetIsuNasional(ctx context.Context, ids []int) (
 	url := fmt.Sprintf("%s/isu-nasional/find-by-ids", c.host)
 	// body kode program unggulans
 	payload := FindByIdsRequest{
-		Id: ids,
+		Ids: ids,
 	}
 	jsonBody, err := json.Marshal(payload)
 	if err != nil {
@@ -211,7 +211,7 @@ func (c *PerencanaanClientImpl) GetIsuRegional(ctx context.Context, ids []int) (
 	url := fmt.Sprintf("%s/isu-regional/find-by-ids", c.host)
 	// body kode program unggulans
 	payload := FindByIdsRequest{
-		Id: ids,
+		Ids: ids,
 	}
 	jsonBody, err := json.Marshal(payload)
 	if err != nil {
