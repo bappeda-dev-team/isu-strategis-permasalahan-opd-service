@@ -1,7 +1,7 @@
 package internal
 
 type FindByIdsRequest struct {
-	Id []int `json:"id" validate:"required,min=1"`
+	Ids []int `json:"ids" validate:"required,min=1"`
 }
 
 type PpdItem struct {
