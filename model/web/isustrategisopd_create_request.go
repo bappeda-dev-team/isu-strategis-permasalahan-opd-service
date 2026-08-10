@@ -14,6 +14,11 @@ type IsuStrategisCreateRequest struct {
 	IsuGlobal              string                   `json:"isu_global"`
 	IsuNasional            string                   `json:"isu_nasional"`
 	IsuRegional            string                   `json:"isu_regional"`
+	IdPpd                  int                      `json:"id_ppd"`
+	IdIsuKlhs              int                      `json:"id_isu_klhs"`
+	IdIsuGlobal            int                      `json:"id_isu_global"`
+	IdIsuNasional          int                      `json:"id_isu_nasional"`
+	IdIsuRegional          int                      `json:"id_isu_regional"`
 	IsuStrategis           string                   `json:"isu_strategis" validate:"required"`
 	PermasalahanOpd        []PermasalahanOpdRequest `json:"permasalahan_opd"`
 }

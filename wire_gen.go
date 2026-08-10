@@ -10,14 +10,12 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/google/wire"
 	"github.com/labstack/echo/v4"
+	"net/http"
 	"permasalahanService/app"
 	"permasalahanService/controller"
+	"permasalahanService/internal"
 	"permasalahanService/repository"
 	"permasalahanService/service"
-)
-
-import (
-	_ "permasalahanService/docs"
 )
 
 // Injectors from injector.go:
@@ -33,7 +31,9 @@ func InitializedServer() *echo.Echo {
 	permasalahanTerpilihServiceImpl := service.NewPermasalahanTerpilihServiceImpl(permasalahanTerpilihRepositoryImpl, permasalahanRepositoryImpl, db, validate)
 	permasalahanTerpilihControllerImpl := controller.NewPermasalahanTerpilihControllerImpl(permasalahanTerpilihServiceImpl)
 	isuStrategisRepositoryImpl := repository.NewIsuStrategisRepositoryImpl()
-	isuStrategisServiceImpl := service.NewIsuStrategisServiceImpl(isuStrategisRepositoryImpl, permasalahanRepositoryImpl, permasalahanTerpilihRepositoryImpl, db, validate)
+	client := NewHttpClient()
+	perencanaanClientImpl := internal.NewPerencanaanClient(client)
+	isuStrategisServiceImpl := service.NewIsuStrategisServiceImpl(isuStrategisRepositoryImpl, permasalahanRepositoryImpl, permasalahanTerpilihRepositoryImpl, perencanaanClientImpl, db, validate)
 	isuStrategisControllerImpl := controller.NewIsuStrategisControllerImpl(isuStrategisServiceImpl)
 	echoEcho := app.NewRouter(permasalahanControllerImpl, permasalahanTerpilihControllerImpl, isuStrategisControllerImpl)
 	return echoEcho
@@ -50,3 +50,12 @@ var permasalahanSet = wire.NewSet(repository.NewPermasalahanRepositoryImpl, wire
 var permasalahanTerpilihSet = wire.NewSet(repository.NewPermasalahanTerpilihRepositoryImpl, wire.Bind(new(repository.PermasalahanTerpilihRepository), new(*repository.PermasalahanTerpilihRepositoryImpl)), service.NewPermasalahanTerpilihServiceImpl, wire.Bind(new(service.PermasalahanTerpilihService), new(*service.PermasalahanTerpilihServiceImpl)), controller.NewPermasalahanTerpilihControllerImpl, wire.Bind(new(controller.PermasalahanTerpilihController), new(*controller.PermasalahanTerpilihControllerImpl)))
 
 var isuStrategisSet = wire.NewSet(repository.NewIsuStrategisRepositoryImpl, wire.Bind(new(repository.IsuStrategisRepository), new(*repository.IsuStrategisRepositoryImpl)), service.NewIsuStrategisServiceImpl, wire.Bind(new(service.IsuStrategisService), new(*service.IsuStrategisServiceImpl)), controller.NewIsuStrategisControllerImpl, wire.Bind(new(controller.IsuStrategisController), new(*controller.IsuStrategisControllerImpl)))
+
+var perencanaanClientSet = wire.NewSet(
+	NewHttpClient, internal.NewPerencanaanClient, wire.Bind(new(internal.PerencanaanClient),
+		new(*internal.PerencanaanClientImpl)),
+)
+
+func NewHttpClient() *http.Client {
+	return &http.Client{}
+}

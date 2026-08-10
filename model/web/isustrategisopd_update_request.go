@@ -2,20 +2,25 @@ package web
 
 // @Description Request Isu Strategis Update
 type IsuStrategisUpdateRequest struct {
-	Id               	   int                                     `json:"id" validate:"required"`
-	KodeOpd          	   string                                  `json:"kode_opd" validate:"required"`
-	NamaOpd          	   string                                  `json:"nama_opd" validate:"required"`
-	KodeBidangUrusan 	   string                                  `json:"kode_bidang_urusan" validate:"required"`
-	NamaBidangUrusan 	   string                                  `json:"nama_bidang_urusan" validate:"required"`
-	TahunAwal        	   string                                  `json:"tahun_awal" `
-	TahunAkhir       	   string                                  `json:"tahun_akhir" `
-	PotensiPerangkatDaerah string                   		 	   `json:"potensi_perangkat_daerah" validate:"required"`
-	IsuKlhs       		   string                   			   `json:"isu_klhs" validate:"required"`
-	IsuGlobal       	   string                   			   `json:"isu_global" validate:"required"`
-	IsuNasional       	   string                   			   `json:"isu_nasional" validate:"required"`
-	IsuRegional       	   string                  				   `json:"isu_regional" validate:"required"`
-	IsuStrategis     	   string                                  `json:"isu_strategis" validate:"required"`
-	PermasalahanOpd  	   []PermasalahanIsuStrategisUpdateRequest `json:"permasalahan_opd"`
+	Id                     int                                     `json:"id" validate:"required"`
+	KodeOpd                string                                  `json:"kode_opd" validate:"required"`
+	NamaOpd                string                                  `json:"nama_opd" validate:"required"`
+	KodeBidangUrusan       string                                  `json:"kode_bidang_urusan" validate:"required"`
+	NamaBidangUrusan       string                                  `json:"nama_bidang_urusan" validate:"required"`
+	TahunAwal              string                                  `json:"tahun_awal" `
+	TahunAkhir             string                                  `json:"tahun_akhir" `
+	PotensiPerangkatDaerah string                                  `json:"potensi_perangkat_daerah" validate:"required"`
+	IsuKlhs                string                                  `json:"isu_klhs" validate:"required"`
+	IsuGlobal              string                                  `json:"isu_global" validate:"required"`
+	IsuNasional            string                                  `json:"isu_nasional" validate:"required"`
+	IsuRegional            string                                  `json:"isu_regional" validate:"required"`
+	IdPpd                  int                                     `json:"id_ppd"`
+	IdIsuKlhs              int                                     `json:"id_isu_klhs"`
+	IdIsuGlobal            int                                     `json:"id_isu_global"`
+	IdIsuNasional          int                                     `json:"id_isu_nasional"`
+	IdIsuRegional          int                                     `json:"id_isu_regional"`
+	IsuStrategis           string                                  `json:"isu_strategis" validate:"required"`
+	PermasalahanOpd        []PermasalahanIsuStrategisUpdateRequest `json:"permasalahan_opd"`
 }
 
 type PermasalahanIsuStrategisUpdateRequest struct {

@@ -4,9 +4,11 @@
 package main
 
 import (
+	"net/http"
 	"permasalahanService/app"
 
 	"permasalahanService/controller"
+	"permasalahanService/internal"
 	"permasalahanService/repository"
 	"permasalahanService/service"
 
@@ -42,6 +44,13 @@ var isuStrategisSet = wire.NewSet(
 	wire.Bind(new(controller.IsuStrategisController), new(*controller.IsuStrategisControllerImpl)),
 )
 
+var perencanaanClientSet = wire.NewSet(
+	NewHttpClient,
+	internal.NewPerencanaanClient,
+	wire.Bind(new(internal.PerencanaanClient),
+		new(*internal.PerencanaanClientImpl)),
+)
+
 func InitializedServer() *echo.Echo {
 	wire.Build(
 		app.GetConnection,
@@ -50,7 +59,12 @@ func InitializedServer() *echo.Echo {
 		permasalahanSet,
 		permasalahanTerpilihSet,
 		isuStrategisSet,
+		perencanaanClientSet,
 		app.NewRouter,
 	)
 	return nil
+}
+
+func NewHttpClient() *http.Client {
+	return &http.Client{}
 }

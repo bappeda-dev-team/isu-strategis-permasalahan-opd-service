@@ -17,7 +17,7 @@ type PerencanaanClientImpl struct {
 func NewPerencanaanClient(httpClient *http.Client) *PerencanaanClientImpl {
 	perencanaanHost := os.Getenv("PERENCANAAN_HOST")
 	return &PerencanaanClientImpl{
-		BaseClient: newBaseClient(
+		BaseClient: NewBaseClient(
 			perencanaanHost,
 			// "https://api-perencanaan-dev-mahulu.zeabur.app",
 			"",
@@ -45,11 +45,12 @@ func (c *PerencanaanClientImpl) GetPotensiPerangkatDaerah(ctx context.Context, i
 	}
 	req.Header.Set("Content-Type", "application/json")
 
-	sessionID := getSessionID(ctx)
-	if sessionID != "" {
-		req.Header.Set("X-Session-Id", sessionID)
+	authorization := getAuthorization(ctx)
+
+	if authorization != "" {
+		req.Header.Set("Authorization", authorization)
 	} else {
-		log.Printf("Tidak ada Session Id ditemukan, mungkin akan 401")
+		log.Printf("Tidak ada Authorization ditemukan, mungkin akan 401")
 	}
 
 	// send request
@@ -90,11 +91,12 @@ func (c *PerencanaanClientImpl) GetIsuKlhs(ctx context.Context, ids []int) ([]Is
 	}
 	req.Header.Set("Content-Type", "application/json")
 
-	sessionID := getSessionID(ctx)
-	if sessionID != "" {
-		req.Header.Set("X-Session-Id", sessionID)
+	authorization := getAuthorization(ctx)
+
+	if authorization != "" {
+		req.Header.Set("Authorization", authorization)
 	} else {
-		log.Printf("Tidak ada Session Id ditemukan, mungkin akan 401")
+		log.Printf("Tidak ada Authorization ditemukan, mungkin akan 401")
 	}
 
 	// send request
@@ -135,11 +137,12 @@ func (c *PerencanaanClientImpl) GetIsuGlobal(ctx context.Context, ids []int) ([]
 	}
 	req.Header.Set("Content-Type", "application/json")
 
-	sessionID := getSessionID(ctx)
-	if sessionID != "" {
-		req.Header.Set("X-Session-Id", sessionID)
+	authorization := getAuthorization(ctx)
+
+	if authorization != "" {
+		req.Header.Set("Authorization", authorization)
 	} else {
-		log.Printf("Tidak ada Session Id ditemukan, mungkin akan 401")
+		log.Printf("Tidak ada Authorization ditemukan, mungkin akan 401")
 	}
 
 	// send request
@@ -180,11 +183,12 @@ func (c *PerencanaanClientImpl) GetIsuNasional(ctx context.Context, ids []int) (
 	}
 	req.Header.Set("Content-Type", "application/json")
 
-	sessionID := getSessionID(ctx)
-	if sessionID != "" {
-		req.Header.Set("X-Session-Id", sessionID)
+	authorization := getAuthorization(ctx)
+
+	if authorization != "" {
+		req.Header.Set("Authorization", authorization)
 	} else {
-		log.Printf("Tidak ada Session Id ditemukan, mungkin akan 401")
+		log.Printf("Tidak ada Authorization ditemukan, mungkin akan 401")
 	}
 
 	// send request
@@ -225,11 +229,12 @@ func (c *PerencanaanClientImpl) GetIsuRegional(ctx context.Context, ids []int) (
 	}
 	req.Header.Set("Content-Type", "application/json")
 
-	sessionID := getSessionID(ctx)
-	if sessionID != "" {
-		req.Header.Set("X-Session-Id", sessionID)
+	authorization := getAuthorization(ctx)
+
+	if authorization != "" {
+		req.Header.Set("Authorization", authorization)
 	} else {
-		log.Printf("Tidak ada Session Id ditemukan, mungkin akan 401")
+		log.Printf("Tidak ada Authorization ditemukan, mungkin akan 401")
 	}
 
 	// send request

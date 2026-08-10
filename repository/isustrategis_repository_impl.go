@@ -20,8 +20,9 @@ func NewIsuStrategisRepositoryImpl() *IsuStrategisRepositoryImpl {
 
 func (repository *IsuStrategisRepositoryImpl) Create(ctx context.Context, tx *sql.Tx, isuStrategis domain.IsuStrategis) (domain.IsuStrategis, error) {
 	script := `INSERT INTO tb_isu_strategis_opd 
-               (kode_opd, nama_opd, kode_bidang_urusan, nama_bidang_urusan, tahun_awal, tahun_akhir, potensi_perangkat_daerah, isu_klhs, isu_global, isu_nasional, isu_regional, isu_strategis) 
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+               (kode_opd, nama_opd, kode_bidang_urusan, nama_bidang_urusan, tahun_awal, tahun_akhir, potensi_perangkat_daerah, isu_klhs, isu_global, isu_nasional, isu_regional, isu_strategis,
+                id_ppd, id_isu_klhs, id_isu_global, id_isu_nasional, id_isu_regional)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
 	result, err := tx.ExecContext(ctx, script,
 		isuStrategis.KodeOpd,
@@ -36,6 +37,11 @@ func (repository *IsuStrategisRepositoryImpl) Create(ctx context.Context, tx *sq
 		isuStrategis.IsuNasional,
 		isuStrategis.IsuRegional,
 		isuStrategis.IsuStrategis,
+		isuStrategis.IdPpd,
+		isuStrategis.IdIsuKlhs,
+		isuStrategis.IdIsuGlobal,
+		isuStrategis.IdIsuNasional,
+		isuStrategis.IdIsuRegional,
 	)
 	if err != nil {
 		return domain.IsuStrategis{}, err
@@ -143,6 +149,11 @@ func (repository *IsuStrategisRepositoryImpl) Update(ctx context.Context, tx *sq
 	                  isu_nasional = ?, 
 	                  isu_regional = ?, 
 	                  isu_strategis = ?,
+	                  id_ppd = ?,
+	                  id_isu_klhs = ?,
+	                  id_isu_global = ?,
+	                  id_isu_nasional = ?,
+	                  id_isu_regional = ?,
 	                  updated_at = CURRENT_TIMESTAMP
 	              WHERE id = ?`
 
@@ -160,6 +171,11 @@ func (repository *IsuStrategisRepositoryImpl) Update(ctx context.Context, tx *sq
 		isuStrategis.IsuNasional,
 		isuStrategis.IsuRegional,
 		isuStrategis.IsuStrategis,
+		isuStrategis.IdPpd,
+		isuStrategis.IdIsuKlhs,
+		isuStrategis.IdIsuGlobal,
+		isuStrategis.IdIsuNasional,
+		isuStrategis.IdIsuRegional,
 		isuStrategis.Id,
 	)
 	if err != nil {
@@ -549,37 +565,37 @@ func (repository *IsuStrategisRepositoryImpl) FindById(ctx context.Context, tx *
 
 	for rows.Next() {
 		var (
-			id               int
-			kodeOpd          string
-			namaOpd          string
-			kodeBidangUrusan string
-			namaBidangUrusan string
-			tahunAwal        string
-			tahunAkhir       string
-			potensiPerangkatDaerah       string
-			isuKlhs       string
-			isuGlobal       string
-			isuNasional       string
-			isuRegional       string
-			isuStrategisText string
-			permasalahanId   sql.NullInt64
-			permasalahan     sql.NullString
-			pKodeOpd         sql.NullString
-			pTahun           sql.NullString
-			levelPohon       sql.NullInt64
-			jenisMasalah     sql.NullString
-			dataDukungId     sql.NullInt64
-			namaDataDukung   sql.NullString
-			narasiDataDukung sql.NullString
-			jumlahDataId     sql.NullInt64
-			jumlahDataTahun  sql.NullString
-			jumlah           sql.NullFloat64
-			satuan           sql.NullString
+			id                     int
+			kodeOpd                string
+			namaOpd                string
+			kodeBidangUrusan       string
+			namaBidangUrusan       string
+			tahunAwal              string
+			tahunAkhir             string
+			potensiPerangkatDaerah string
+			isuKlhs                string
+			isuGlobal              string
+			isuNasional            string
+			isuRegional            string
+			isuStrategisText       string
+			permasalahanId         sql.NullInt64
+			permasalahan           sql.NullString
+			pKodeOpd               sql.NullString
+			pTahun                 sql.NullString
+			levelPohon             sql.NullInt64
+			jenisMasalah           sql.NullString
+			dataDukungId           sql.NullInt64
+			namaDataDukung         sql.NullString
+			narasiDataDukung       sql.NullString
+			jumlahDataId           sql.NullInt64
+			jumlahDataTahun        sql.NullString
+			jumlah                 sql.NullFloat64
+			satuan                 sql.NullString
 		)
 
 		err := rows.Scan(
 			&id, &kodeOpd, &namaOpd, &kodeBidangUrusan, &namaBidangUrusan,
-			&tahunAwal, &tahunAkhir, &potensiPerangkatDaerah, &isuKlhs, 
+			&tahunAwal, &tahunAkhir, &potensiPerangkatDaerah, &isuKlhs,
 			&isuGlobal, &isuNasional, &isuRegional, &isuStrategisText,
 			&permasalahanId, &permasalahan,
 			&pKodeOpd, &pTahun, &levelPohon, &jenisMasalah, &dataDukungId,
@@ -593,20 +609,20 @@ func (repository *IsuStrategisRepositoryImpl) FindById(ctx context.Context, tx *
 		// Inisialisasi IsuStrategis jika belum ada
 		if isuStrategis == nil {
 			isuStrategis = &domain.IsuStrategis{
-				Id:               id,
-				KodeOpd:          kodeOpd,
-				NamaOpd:          namaOpd,
-				KodeBidangUrusan: kodeBidangUrusan,
-				NamaBidangUrusan: namaBidangUrusan,
-				TahunAwal:        tahunAwal,
-				TahunAkhir:       tahunAkhir,
-				PotensiPerangkatDaerah:       potensiPerangkatDaerah,
-				IsuKlhs:       isuKlhs,
-				IsuGlobal:       isuGlobal,
-				IsuNasional:       isuNasional,
-				IsuRegional:       isuRegional,
-				IsuStrategis:     isuStrategisText,
-				PermasalahanOpd:  make([]domain.Permasalahan, 0),
+				Id:                     id,
+				KodeOpd:                kodeOpd,
+				NamaOpd:                namaOpd,
+				KodeBidangUrusan:       kodeBidangUrusan,
+				NamaBidangUrusan:       namaBidangUrusan,
+				TahunAwal:              tahunAwal,
+				TahunAkhir:             tahunAkhir,
+				PotensiPerangkatDaerah: potensiPerangkatDaerah,
+				IsuKlhs:                isuKlhs,
+				IsuGlobal:              isuGlobal,
+				IsuNasional:            isuNasional,
+				IsuRegional:            isuRegional,
+				IsuStrategis:           isuStrategisText,
+				PermasalahanOpd:        make([]domain.Permasalahan, 0),
 			}
 		}
 
@@ -811,6 +827,11 @@ func (repository *IsuStrategisRepositoryImpl) FindAll(ctx context.Context, tx *s
         iso.nama_bidang_urusan,
         iso.tahun_awal,
         iso.tahun_akhir,
+        iso.id_ppd,
+        iso.id_isu_klhs,
+        iso.id_isu_global,
+        iso.id_isu_nasional,
+        iso.id_isu_regional,
         iso.potensi_perangkat_daerah,
         iso.isu_klhs,
         iso.isu_global,
@@ -871,38 +892,50 @@ func (repository *IsuStrategisRepositoryImpl) FindAll(ctx context.Context, tx *s
 
 	for rows.Next() {
 		var (
-			isuStrategisId   int
-			kodeOpd          string
-			namaOpd          string
-			kodeBidangUrusan string
-			namaBidangUrusan string
-			tahunAwal        string
-			tahunAkhir       string
-			potensiPerangkatDaerah       string
-			isuKlhs       string
-			isuGlobal       string
-			isuNasional       string
-			isuRegional       string
-			isuStrategis     string
-			createdAt        time.Time
-			permasalahanId   sql.NullInt64
-			permasalahan     sql.NullString
-			pKodeOpd         sql.NullString
-			pTahun           sql.NullString
-			levelPohon       sql.NullInt64
-			jenisMasalah     sql.NullString
-			dataDukungId     sql.NullInt64
-			namaDataDukung   sql.NullString
-			narasiDataDukung sql.NullString
-			jumlahDataId     sql.NullInt64
-			jumlahDataTahun  sql.NullString
-			jumlah           sql.NullFloat64
-			satuan           sql.NullString
+			isuStrategisId         int
+			kodeOpd                string
+			namaOpd                string
+			kodeBidangUrusan       string
+			namaBidangUrusan       string
+			tahunAwal              string
+			tahunAkhir             string
+			idPpdNI                sql.NullInt64
+			idIsuKlhsNI            sql.NullInt64
+			idIsuGlobalNI          sql.NullInt64
+			idIsuNasionalNI        sql.NullInt64
+			idIsuRegionalNI        sql.NullInt64
+			idPpd                  int
+			idIsuKlhs              int
+			idIsuGlobal            int
+			idIsuNasional          int
+			idIsuRegional          int
+			potensiPerangkatDaerah string
+			isuKlhs                string
+			isuGlobal              string
+			isuNasional            string
+			isuRegional            string
+			isuStrategis           string
+			createdAt              time.Time
+			permasalahanId         sql.NullInt64
+			permasalahan           sql.NullString
+			pKodeOpd               sql.NullString
+			pTahun                 sql.NullString
+			levelPohon             sql.NullInt64
+			jenisMasalah           sql.NullString
+			dataDukungId           sql.NullInt64
+			namaDataDukung         sql.NullString
+			narasiDataDukung       sql.NullString
+			jumlahDataId           sql.NullInt64
+			jumlahDataTahun        sql.NullString
+			jumlah                 sql.NullFloat64
+			satuan                 sql.NullString
 		)
 
 		err := rows.Scan(
 			&isuStrategisId, &kodeOpd, &namaOpd, &kodeBidangUrusan, &namaBidangUrusan,
-			&tahunAwal, &tahunAkhir, &potensiPerangkatDaerah, &isuKlhs, &isuGlobal, &isuNasional, &isuRegional,
+			&tahunAwal, &tahunAkhir,
+			&idPpdNI, &idIsuKlhsNI, &idIsuGlobalNI, &idIsuNasionalNI, &idIsuRegionalNI,
+			&potensiPerangkatDaerah, &isuKlhs, &isuGlobal, &isuNasional, &isuRegional,
 			&isuStrategis, &createdAt, &permasalahanId, &permasalahan,
 			&pKodeOpd, &pTahun, &levelPohon, &jenisMasalah, &dataDukungId,
 			&namaDataDukung, &narasiDataDukung, &jumlahDataId, &jumlahDataTahun,
@@ -912,25 +945,46 @@ func (repository *IsuStrategisRepositoryImpl) FindAll(ctx context.Context, tx *s
 			return nil, err
 		}
 
+		if idPpdNI.Valid {
+			idPpd = int(idPpdNI.Int64)
+		}
+		if idIsuKlhsNI.Valid {
+			idIsuKlhs = int(idIsuKlhsNI.Int64)
+		}
+		if idIsuGlobalNI.Valid {
+			idIsuGlobal = int(idIsuGlobalNI.Int64)
+		}
+		if idIsuNasionalNI.Valid {
+			idIsuNasional = int(idIsuNasionalNI.Int64)
+		}
+		if idIsuRegionalNI.Valid {
+			idIsuRegional = int(idIsuRegionalNI.Int64)
+		}
+
 		// Get or create IsuStrategis
 		isuStr, exists := isuStrategisMap[isuStrategisId]
 		if !exists {
 			isuStr = &domain.IsuStrategis{
-				Id:               isuStrategisId,
-				KodeOpd:          kodeOpd,
-				NamaOpd:          namaOpd,
-				KodeBidangUrusan: kodeBidangUrusan,
-				NamaBidangUrusan: namaBidangUrusan,
-				TahunAwal:        tahunAwal,
-				TahunAkhir:       tahunAkhir,
-				PotensiPerangkatDaerah:       potensiPerangkatDaerah,
-				IsuKlhs:       isuKlhs,
-				IsuGlobal:       isuGlobal,
-				IsuNasional:       isuNasional,
-				IsuRegional:       isuRegional,
-				IsuStrategis:     isuStrategis,
-				CreatedAt:        createdAt, // Tambahkan created_at
-				PermasalahanOpd:  make([]domain.Permasalahan, 0),
+				Id:                     isuStrategisId,
+				KodeOpd:                kodeOpd,
+				NamaOpd:                namaOpd,
+				KodeBidangUrusan:       kodeBidangUrusan,
+				NamaBidangUrusan:       namaBidangUrusan,
+				TahunAwal:              tahunAwal,
+				TahunAkhir:             tahunAkhir,
+				IdPpd:                  idPpd,
+				IdIsuKlhs:              idIsuKlhs,
+				IdIsuGlobal:            idIsuGlobal,
+				IdIsuNasional:          idIsuNasional,
+				IdIsuRegional:          idIsuRegional,
+				PotensiPerangkatDaerah: potensiPerangkatDaerah,
+				IsuKlhs:                isuKlhs,
+				IsuGlobal:              isuGlobal,
+				IsuNasional:            isuNasional,
+				IsuRegional:            isuRegional,
+				IsuStrategis:           isuStrategis,
+				CreatedAt:              createdAt, // Tambahkan created_at
+				PermasalahanOpd:        make([]domain.Permasalahan, 0),
 			}
 			isuStrategisMap[isuStrategisId] = isuStr
 		}
@@ -1163,6 +1217,11 @@ func (repository *IsuStrategisRepositoryImpl) FindallIsuKebelakang(ctx context.C
         iso.nama_bidang_urusan,
         iso.tahun_awal,
         iso.tahun_akhir,
+	iso.id_ppd,
+	iso.id_isu_klhs,
+	iso.id_isu_global,
+	iso.id_isu_nasional,
+	iso.id_isu_regional,
         iso.potensi_perangkat_daerah,
         iso.isu_klhs,
         iso.isu_global,
@@ -1227,20 +1286,30 @@ func (repository *IsuStrategisRepositoryImpl) FindallIsuKebelakang(ctx context.C
 	// Batch read dari database
 	for rows.Next() {
 		var (
-			isuStrategisId   int
-			kodeOpd          string
-			namaOpd          string
-			kodeBidangUrusan string
-			namaBidangUrusan string
-			tahunAwal        string
-			tahunAkhir       string
-			potensiPerangkatDaerah       string
-			isuKlhs       string
-			isuGlobal       string
-			isuNasional       string
-			isuRegional       string
-			isuStrategis     string
-			createdAt        time.Time
+			isuStrategisId         int
+			kodeOpd                string
+			namaOpd                string
+			kodeBidangUrusan       string
+			namaBidangUrusan       string
+			tahunAwal              string
+			tahunAkhir             string
+			idPpdNI                sql.NullInt64
+			idIsuKlhsNI            sql.NullInt64
+			idIsuGlobalNI          sql.NullInt64
+			idIsuNasionalNI        sql.NullInt64
+			idIsuRegionalNI        sql.NullInt64
+			idPpd                  int
+			idIsuKlhs              int
+			idIsuGlobal            int
+			idIsuNasional          int
+			idIsuRegional          int
+			potensiPerangkatDaerah string
+			isuKlhs                string
+			isuGlobal              string
+			isuNasional            string
+			isuRegional            string
+			isuStrategis           string
+			createdAt              time.Time
 			// 🔥 HAPUS: permasalahanTerpilihId
 			permasalahanOpdId sql.NullInt64
 			permasalahan      sql.NullString
@@ -1260,8 +1329,10 @@ func (repository *IsuStrategisRepositoryImpl) FindallIsuKebelakang(ctx context.C
 		// 🔥 PERBAIKAN: Scan 22 variabel (hapus permasalahanTerpilihId)
 		err := rows.Scan(
 			&isuStrategisId, &kodeOpd, &namaOpd, &kodeBidangUrusan, &namaBidangUrusan,
-			&tahunAwal, &tahunAkhir, &potensiPerangkatDaerah, &isuKlhs, &isuGlobal,
-			&isuNasional, &isuRegional, &isuStrategis, &createdAt,
+			&tahunAwal, &tahunAkhir,
+			&idPpdNI, &idIsuKlhsNI, &idIsuGlobalNI, &idIsuNasionalNI, &idIsuRegionalNI,
+			&potensiPerangkatDaerah, &isuKlhs, &isuGlobal, &isuNasional, &isuRegional,
+			&isuStrategis, &createdAt,
 			&permasalahanOpdId, &permasalahan,
 			&pKodeOpd, &pTahun, &levelPohon, &jenisMasalah, &dataDukungId,
 			&namaDataDukung, &narasiDataDukung, &jumlahDataId, &jumlahDataTahun,
@@ -1271,25 +1342,46 @@ func (repository *IsuStrategisRepositoryImpl) FindallIsuKebelakang(ctx context.C
 			return nil, err
 		}
 
+		if idPpdNI.Valid {
+			idPpd = int(idPpdNI.Int64)
+		}
+		if idIsuKlhsNI.Valid {
+			idIsuKlhs = int(idIsuKlhsNI.Int64)
+		}
+		if idIsuGlobalNI.Valid {
+			idIsuGlobal = int(idIsuGlobalNI.Int64)
+		}
+		if idIsuNasionalNI.Valid {
+			idIsuNasional = int(idIsuNasionalNI.Int64)
+		}
+		if idIsuRegionalNI.Valid {
+			idIsuRegional = int(idIsuRegionalNI.Int64)
+		}
+
 		// Get or create IsuStrategis
 		isuStr, exists := isuStrategisMap[isuStrategisId]
 		if !exists {
 			isuStr = &domain.IsuStrategis{
-				Id:               isuStrategisId,
-				KodeOpd:          kodeOpd,
-				NamaOpd:          namaOpd,
-				KodeBidangUrusan: kodeBidangUrusan,
-				NamaBidangUrusan: namaBidangUrusan,
-				TahunAwal:        tahunAwal,
-				TahunAkhir:       tahunAkhir,
-				PotensiPerangkatDaerah:       potensiPerangkatDaerah,
-				IsuKlhs:       isuKlhs,
-				IsuGlobal:       isuGlobal,
-				IsuNasional:       isuNasional,
-				IsuRegional:       isuRegional,
-				IsuStrategis:     isuStrategis,
-				CreatedAt:        createdAt,
-				PermasalahanOpd:  make([]domain.Permasalahan, 0),
+				Id:                     isuStrategisId,
+				KodeOpd:                kodeOpd,
+				NamaOpd:                namaOpd,
+				KodeBidangUrusan:       kodeBidangUrusan,
+				NamaBidangUrusan:       namaBidangUrusan,
+				TahunAwal:              tahunAwal,
+				TahunAkhir:             tahunAkhir,
+				IdPpd:                  idPpd,
+				IdIsuKlhs:              idIsuKlhs,
+				IdIsuGlobal:            idIsuGlobal,
+				IdIsuNasional:          idIsuNasional,
+				IdIsuRegional:          idIsuRegional,
+				PotensiPerangkatDaerah: potensiPerangkatDaerah,
+				IsuKlhs:                isuKlhs,
+				IsuGlobal:              isuGlobal,
+				IsuNasional:            isuNasional,
+				IsuRegional:            isuRegional,
+				IsuStrategis:           isuStrategis,
+				CreatedAt:              createdAt,
+				PermasalahanOpd:        make([]domain.Permasalahan, 0),
 			}
 			isuStrategisMap[isuStrategisId] = isuStr
 		}

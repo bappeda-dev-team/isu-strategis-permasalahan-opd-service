@@ -13,7 +13,7 @@ type BaseClient struct {
 }
 
 // constructor
-func newBaseClient(host, path string, httpClient *http.Client) BaseClient {
+func NewBaseClient(host, path string, httpClient *http.Client) BaseClient {
 	return BaseClient{
 		host:       host,
 		path:       path,
@@ -39,4 +39,15 @@ func getSessionID(ctx context.Context) string {
 		}
 	}
 	return os.Getenv("DEV_SESSION_ID") // fallback
+}
+
+const AuthorizationKey ctxKey = "Authorization"
+
+func getAuthorization(ctx context.Context) string {
+	if v := ctx.Value(AuthorizationKey); v != nil {
+		if s, ok := v.(string); ok && s != "" {
+			return s
+		}
+	}
+	return os.Getenv("DEV_AUTHORIZATION") // fallback
 }

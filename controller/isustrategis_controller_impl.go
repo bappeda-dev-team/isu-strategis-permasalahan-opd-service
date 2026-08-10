@@ -1,7 +1,9 @@
 package controller
 
 import (
+	"context"
 	"net/http"
+	"permasalahanService/internal"
 	"permasalahanService/model/web"
 	"permasalahanService/service"
 	"strconv"
@@ -216,7 +218,13 @@ func (controller *IsuStrategisControllerImpl) FindAll(c echo.Context) error {
 func (controller *IsuStrategisControllerImpl) FindallIsuKebelakang(c echo.Context) error {
 	kodeOpd := c.Param("kode_opd")
 	tahun := c.Param("tahun")
-	isuStrategisResponse, err := controller.IsuStrategisService.FindallIsuKebelakang(c.Request().Context(), kodeOpd, tahun)
+	ctx := context.WithValue(
+		c.Request().Context(),
+		internal.AuthorizationKey,
+		c.Request().Header.Get("Authorization"),
+	)
+
+	isuStrategisResponse, err := controller.IsuStrategisService.FindallIsuKebelakang(ctx, kodeOpd, tahun)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, web.WebResponse{
 			Code:   http.StatusInternalServerError,
