@@ -7,22 +7,27 @@
 package main
 
 import (
+	"net/http"
+	"permasalahanService/app"
+	"permasalahanService/controller"
+	"permasalahanService/internal"
+	"permasalahanService/repository"
+	"permasalahanService/service"
+	"time"
+
 	"github.com/go-playground/validator/v10"
 	"github.com/google/wire"
 	"github.com/labstack/echo/v4"
-	"permasalahanService/app"
-	"permasalahanService/controller"
-	"permasalahanService/repository"
-	"permasalahanService/service"
-)
 
-import (
 	_ "permasalahanService/docs"
 )
 
 // Injectors from injector.go:
 
 func InitializedServer() *echo.Echo {
+	httpClient := &http.Client{
+		Timeout: 30 * time.Second,
+	}
 	permasalahanRepositoryImpl := repository.NewPermasalahanRepositoryImpl()
 	db := app.GetConnection()
 	v := _wireValue
@@ -32,8 +37,9 @@ func InitializedServer() *echo.Echo {
 	permasalahanTerpilihRepositoryImpl := repository.NewPermasalahanTerpilihRepositoryImpl()
 	permasalahanTerpilihServiceImpl := service.NewPermasalahanTerpilihServiceImpl(permasalahanTerpilihRepositoryImpl, permasalahanRepositoryImpl, db, validate)
 	permasalahanTerpilihControllerImpl := controller.NewPermasalahanTerpilihControllerImpl(permasalahanTerpilihServiceImpl)
+	perencanaanClientImpl := internal.NewPerencanaanClient(httpClient)
 	isuStrategisRepositoryImpl := repository.NewIsuStrategisRepositoryImpl()
-	isuStrategisServiceImpl := service.NewIsuStrategisServiceImpl(isuStrategisRepositoryImpl, permasalahanRepositoryImpl, permasalahanTerpilihRepositoryImpl, db, validate)
+	isuStrategisServiceImpl := service.NewIsuStrategisServiceImpl(isuStrategisRepositoryImpl, permasalahanRepositoryImpl, permasalahanTerpilihRepositoryImpl, perencanaanClientImpl, db, validate)
 	isuStrategisControllerImpl := controller.NewIsuStrategisControllerImpl(isuStrategisServiceImpl)
 	echoEcho := app.NewRouter(permasalahanControllerImpl, permasalahanTerpilihControllerImpl, isuStrategisControllerImpl)
 	return echoEcho

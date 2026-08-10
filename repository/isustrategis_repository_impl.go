@@ -20,8 +20,8 @@ func NewIsuStrategisRepositoryImpl() *IsuStrategisRepositoryImpl {
 
 func (repository *IsuStrategisRepositoryImpl) Create(ctx context.Context, tx *sql.Tx, isuStrategis domain.IsuStrategis) (domain.IsuStrategis, error) {
 	script := `INSERT INTO tb_isu_strategis_opd 
-               (kode_opd, nama_opd, kode_bidang_urusan, nama_bidang_urusan, tahun_awal, tahun_akhir, potensi_perangkat_daerah, isu_klhs, isu_global, isu_nasional, isu_regional, isu_strategis) 
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+               (kode_opd, nama_opd, kode_bidang_urusan, nama_bidang_urusan, tahun_awal, tahun_akhir, id_ppd, id_isu_klhs, id_isu_global, id_isu_nasional, id_isu_regional, potensi_perangkat_daerah, isu_klhs, isu_global, isu_nasional, isu_regional, isu_strategis) 
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
 	result, err := tx.ExecContext(ctx, script,
 		isuStrategis.KodeOpd,
@@ -30,6 +30,11 @@ func (repository *IsuStrategisRepositoryImpl) Create(ctx context.Context, tx *sq
 		isuStrategis.NamaBidangUrusan,
 		isuStrategis.TahunAwal,
 		isuStrategis.TahunAkhir,
+		isuStrategis.IdPpd,
+		isuStrategis.IdIsuKlhs,
+		isuStrategis.IdIsuGlobal,
+		isuStrategis.IdIsuNasional,
+		isuStrategis.IdIsuRegional,
 		isuStrategis.PotensiPerangkatDaerah,
 		isuStrategis.IsuKlhs,
 		isuStrategis.IsuGlobal,
@@ -137,6 +142,11 @@ func (repository *IsuStrategisRepositoryImpl) Update(ctx context.Context, tx *sq
 	                  nama_bidang_urusan = ?, 
 	                  tahun_awal = ?, 
 	                  tahun_akhir = ?, 
+	                  id_ppd = ?, 
+	                  id_isu_klhs = ?, 
+	                  id_isu_global = ?, 
+	                  id_isu_nasional = ?, 
+	                  id_isu_regional = ?, 
 	                  potensi_perangkat_daerah = ?, 
 	                  isu_klhs = ?, 
 	                  isu_global = ?, 
@@ -154,6 +164,11 @@ func (repository *IsuStrategisRepositoryImpl) Update(ctx context.Context, tx *sq
 		isuStrategis.NamaBidangUrusan,
 		isuStrategis.TahunAwal,
 		isuStrategis.TahunAkhir,
+		isuStrategis.IdPpd,
+		isuStrategis.IdIsuKlhs,
+		isuStrategis.IdIsuGlobal,
+		isuStrategis.IdIsuNasional,
+		isuStrategis.IdIsuRegional,
 		isuStrategis.PotensiPerangkatDaerah,
 		isuStrategis.IsuKlhs,
 		isuStrategis.IsuGlobal,
@@ -811,6 +826,11 @@ func (repository *IsuStrategisRepositoryImpl) FindAll(ctx context.Context, tx *s
         iso.nama_bidang_urusan,
         iso.tahun_awal,
         iso.tahun_akhir,
+		iso.id_ppd,
+        iso.id_isu_klhs,
+        iso.id_isu_global,
+        iso.id_isu_nasional,
+        iso.id_isu_regional,
         iso.potensi_perangkat_daerah,
         iso.isu_klhs,
         iso.isu_global,
@@ -878,6 +898,12 @@ func (repository *IsuStrategisRepositoryImpl) FindAll(ctx context.Context, tx *s
 			namaBidangUrusan string
 			tahunAwal        string
 			tahunAkhir       string
+			
+			idPpd          sql.NullInt64
+			idIsuKlhs      sql.NullInt64
+			idIsuGlobal    sql.NullInt64
+			idIsuNasional  sql.NullInt64
+			idIsuRegional  sql.NullInt64
 			potensiPerangkatDaerah       string
 			isuKlhs       string
 			isuGlobal       string
@@ -902,7 +928,8 @@ func (repository *IsuStrategisRepositoryImpl) FindAll(ctx context.Context, tx *s
 
 		err := rows.Scan(
 			&isuStrategisId, &kodeOpd, &namaOpd, &kodeBidangUrusan, &namaBidangUrusan,
-			&tahunAwal, &tahunAkhir, &potensiPerangkatDaerah, &isuKlhs, &isuGlobal, &isuNasional, &isuRegional,
+			&tahunAwal, &tahunAkhir, &idPpd, &idIsuKlhs, &idIsuGlobal, &idIsuNasional, &idIsuRegional,
+			&potensiPerangkatDaerah, &isuKlhs, &isuGlobal, &isuNasional, &isuRegional,
 			&isuStrategis, &createdAt, &permasalahanId, &permasalahan,
 			&pKodeOpd, &pTahun, &levelPohon, &jenisMasalah, &dataDukungId,
 			&namaDataDukung, &narasiDataDukung, &jumlahDataId, &jumlahDataTahun,
@@ -923,6 +950,11 @@ func (repository *IsuStrategisRepositoryImpl) FindAll(ctx context.Context, tx *s
 				NamaBidangUrusan: namaBidangUrusan,
 				TahunAwal:        tahunAwal,
 				TahunAkhir:       tahunAkhir,
+				IdPpd:          nullInt64ToIntPtr(idPpd),
+				IdIsuKlhs:      nullInt64ToIntPtr(idIsuKlhs),
+				IdIsuGlobal:    nullInt64ToIntPtr(idIsuGlobal),
+				IdIsuNasional:  nullInt64ToIntPtr(idIsuNasional),
+				IdIsuRegional:  nullInt64ToIntPtr(idIsuRegional),
 				PotensiPerangkatDaerah:       potensiPerangkatDaerah,
 				IsuKlhs:       isuKlhs,
 				IsuGlobal:       isuGlobal,
@@ -1163,6 +1195,11 @@ func (repository *IsuStrategisRepositoryImpl) FindallIsuKebelakang(ctx context.C
         iso.nama_bidang_urusan,
         iso.tahun_awal,
         iso.tahun_akhir,
+        iso.id_ppd,
+        iso.id_isu_klhs,
+        iso.id_isu_global,
+        iso.id_isu_nasional,
+        iso.id_isu_regional,
         iso.potensi_perangkat_daerah,
         iso.isu_klhs,
         iso.isu_global,
@@ -1234,6 +1271,13 @@ func (repository *IsuStrategisRepositoryImpl) FindallIsuKebelakang(ctx context.C
 			namaBidangUrusan string
 			tahunAwal        string
 			tahunAkhir       string
+
+			idPpd          sql.NullInt64
+			idIsuKlhs      sql.NullInt64
+			idIsuGlobal    sql.NullInt64
+			idIsuNasional  sql.NullInt64
+			idIsuRegional  sql.NullInt64
+
 			potensiPerangkatDaerah       string
 			isuKlhs       string
 			isuGlobal       string
@@ -1260,7 +1304,8 @@ func (repository *IsuStrategisRepositoryImpl) FindallIsuKebelakang(ctx context.C
 		// 🔥 PERBAIKAN: Scan 22 variabel (hapus permasalahanTerpilihId)
 		err := rows.Scan(
 			&isuStrategisId, &kodeOpd, &namaOpd, &kodeBidangUrusan, &namaBidangUrusan,
-			&tahunAwal, &tahunAkhir, &potensiPerangkatDaerah, &isuKlhs, &isuGlobal,
+			&tahunAwal, &tahunAkhir, &idPpd, &idIsuKlhs, &idIsuGlobal, &idIsuNasional,
+    		&idIsuRegional, &potensiPerangkatDaerah, &isuKlhs, &isuGlobal,
 			&isuNasional, &isuRegional, &isuStrategis, &createdAt,
 			&permasalahanOpdId, &permasalahan,
 			&pKodeOpd, &pTahun, &levelPohon, &jenisMasalah, &dataDukungId,
@@ -1282,6 +1327,11 @@ func (repository *IsuStrategisRepositoryImpl) FindallIsuKebelakang(ctx context.C
 				NamaBidangUrusan: namaBidangUrusan,
 				TahunAwal:        tahunAwal,
 				TahunAkhir:       tahunAkhir,
+				IdPpd:          nullInt64ToIntPtr(idPpd),
+				IdIsuKlhs:      nullInt64ToIntPtr(idIsuKlhs),
+				IdIsuGlobal:    nullInt64ToIntPtr(idIsuGlobal),
+				IdIsuNasional:  nullInt64ToIntPtr(idIsuNasional),
+				IdIsuRegional:  nullInt64ToIntPtr(idIsuRegional),
 				PotensiPerangkatDaerah:       potensiPerangkatDaerah,
 				IsuKlhs:       isuKlhs,
 				IsuGlobal:       isuGlobal,
@@ -1411,6 +1461,15 @@ func (repository *IsuStrategisRepositoryImpl) FindallIsuKebelakang(ctx context.C
 	}
 
 	return result, nil
+}
+
+func nullInt64ToIntPtr(value sql.NullInt64) *int {
+	if !value.Valid {
+		return nil
+	}
+
+	result := int(value.Int64)
+	return &result
 }
 
 func (repository *IsuStrategisRepositoryImpl) DeleteDataDukungById(ctx context.Context, tx *sql.Tx, dataDukungId int) error {

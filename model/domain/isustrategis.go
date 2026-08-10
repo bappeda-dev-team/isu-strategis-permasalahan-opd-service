@@ -10,6 +10,11 @@ type IsuStrategis struct {
 	NamaBidangUrusan 			 string
 	TahunAwal        			 string
 	TahunAkhir       			 string
+	IdPpd       			 	 *int
+	IdIsuKlhs       			 *int
+	IdIsuGlobal     			 *int
+	IdIsuNasional     			 *int
+	IdIsuRegional     			 *int
 	PotensiPerangkatDaerah       string
 	IsuKlhs       				 string
 	IsuGlobal       			 string

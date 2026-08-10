@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"permasalahanService/helper"
+	"permasalahanService/internal"
 	"permasalahanService/model/domain"
 	"permasalahanService/model/web"
 	"permasalahanService/repository"
@@ -20,6 +21,7 @@ type IsuStrategisServiceImpl struct {
 	IsuStrategisRepository         repository.IsuStrategisRepository
 	PermasalahanRepository         repository.PermasalahanRepository
 	PermasalahanTerpilihRepository repository.PermasalahanTerpilihRepository
+	PerencanaanClient              internal.PerencanaanClient
 	DB                             *sql.DB
 	Validate                       *validator.Validate
 }
@@ -28,6 +30,7 @@ func NewIsuStrategisServiceImpl(
 	isuStrategisRepository repository.IsuStrategisRepository,
 	permasalahanRepository repository.PermasalahanRepository,
 	permasalahanTerpilihRepository repository.PermasalahanTerpilihRepository,
+	perencanaanClient internal.PerencanaanClient,
 	db *sql.DB,
 	validate *validator.Validate,
 ) *IsuStrategisServiceImpl {
@@ -35,6 +38,7 @@ func NewIsuStrategisServiceImpl(
 		IsuStrategisRepository:         isuStrategisRepository,
 		PermasalahanRepository:         permasalahanRepository,
 		PermasalahanTerpilihRepository: permasalahanTerpilihRepository,
+		PerencanaanClient: perencanaanClient,
 		DB:                             db,
 		Validate:                       validate,
 	}
@@ -116,19 +120,24 @@ func (service *IsuStrategisServiceImpl) Create(ctx context.Context, request web.
 	}
 
 	isuStrategis := domain.IsuStrategis{
-		KodeOpd:          request.KodeOpd,
-		NamaOpd:          request.NamaOpd,
-		KodeBidangUrusan: request.KodeBidangUrusan,
-		NamaBidangUrusan: request.NamaBidangUrusan,
-		TahunAwal:        request.TahunAwal,
-		TahunAkhir:       request.TahunAkhir,
-		PotensiPerangkatDaerah:       request.PotensiPerangkatDaerah,
-		IsuKlhs:       request.IsuKlhs,
-		IsuGlobal:       request.IsuGlobal,
-		IsuNasional:       request.IsuNasional,
-		IsuRegional:       request.IsuRegional,
-		IsuStrategis:     request.IsuStrategis,
-		PermasalahanOpd:  permasalahanOpd,
+		KodeOpd:          		request.KodeOpd,
+		NamaOpd:          		request.NamaOpd,
+		KodeBidangUrusan: 		request.KodeBidangUrusan,
+		NamaBidangUrusan: 		request.NamaBidangUrusan,
+		TahunAwal:        		request.TahunAwal,
+		TahunAkhir:       		request.TahunAkhir,
+		IdPpd:            		request.IdPpd,
+		IdIsuKlhs:              request.IdIsuKlhs,
+		IdIsuGlobal:            request.IdIsuGlobal,
+		IdIsuNasional:          request.IdIsuNasional,
+		IdIsuRegional:          request.IdIsuRegional,
+		PotensiPerangkatDaerah: request.PotensiPerangkatDaerah,
+		IsuKlhs:       			request.IsuKlhs,
+		IsuGlobal:       		request.IsuGlobal,
+		IsuNasional:       		request.IsuNasional,
+		IsuRegional:       		request.IsuRegional,
+		IsuStrategis:     		request.IsuStrategis,
+		PermasalahanOpd:  		permasalahanOpd,
 	}
 
 	isuStrategis, err = service.IsuStrategisRepository.Create(ctx, tx, isuStrategis)
@@ -178,19 +187,24 @@ func (service *IsuStrategisServiceImpl) Update(ctx context.Context, request web.
 
 	// Update isu strategis basic info
 	isuStrategis := domain.IsuStrategis{
-		Id:               request.Id,
-		KodeOpd:          request.KodeOpd,
-		NamaOpd:          request.NamaOpd,
-		KodeBidangUrusan: request.KodeBidangUrusan,
-		NamaBidangUrusan: request.NamaBidangUrusan,
-		TahunAwal:        request.TahunAwal,
-		TahunAkhir:       request.TahunAkhir,
-		PotensiPerangkatDaerah:       request.PotensiPerangkatDaerah,
-		IsuKlhs:       request.IsuKlhs,
-		IsuGlobal:       request.IsuGlobal,
-		IsuNasional:       request.IsuNasional,
-		IsuRegional:       request.IsuRegional,
-		IsuStrategis:     request.IsuStrategis,
+		Id:               		request.Id,
+		KodeOpd:          		request.KodeOpd,
+		NamaOpd:          		request.NamaOpd,
+		KodeBidangUrusan: 		request.KodeBidangUrusan,
+		NamaBidangUrusan: 		request.NamaBidangUrusan,
+		TahunAwal:        		request.TahunAwal,
+		TahunAkhir:       		request.TahunAkhir,
+		IdPpd:            		request.IdPpd,
+		IdIsuKlhs:              request.IdIsuKlhs,
+		IdIsuGlobal:            request.IdIsuGlobal,
+		IdIsuNasional:          request.IdIsuNasional,
+		IdIsuRegional:          request.IdIsuRegional,
+		PotensiPerangkatDaerah: request.PotensiPerangkatDaerah,
+		IsuKlhs:       			request.IsuKlhs,
+		IsuGlobal:       		request.IsuGlobal,
+		IsuNasional:       		request.IsuNasional,
+		IsuRegional:       		request.IsuRegional,
+		IsuStrategis:     		request.IsuStrategis,
 	}
 
 	// Process permasalahan
@@ -523,6 +537,186 @@ func (service *IsuStrategisServiceImpl) FindallIsuKebelakang(ctx context.Context
 		sort.Slice(result, func(i, j int) bool {
 			return result[i].CreatedAt.Before(result[j].CreatedAt)
 		})
+
+		// =====================================================
+		// Ambil semua ID master dari data Isu Strategis
+		// =====================================================
+
+		ppdIDs := make([]int, 0)
+		klhsIDs := make([]int, 0)
+		globalIDs := make([]int, 0)
+		nasionalIDs := make([]int, 0)
+		regionalIDs := make([]int, 0)
+
+		for _, isu := range result {
+
+			if isu.IdPpd != nil {
+				ppdIDs = append(ppdIDs, *isu.IdPpd)
+			}
+
+			if isu.IdIsuKlhs != nil {
+				klhsIDs = append(klhsIDs, *isu.IdIsuKlhs)
+			}
+
+			if isu.IdIsuGlobal != nil {
+				globalIDs = append(globalIDs, *isu.IdIsuGlobal)
+			}
+
+			if isu.IdIsuNasional != nil {
+				nasionalIDs = append(nasionalIDs, *isu.IdIsuNasional)
+			}
+
+			if isu.IdIsuRegional != nil {
+				regionalIDs = append(regionalIDs, *isu.IdIsuRegional)
+			}
+		}
+
+		// =====================================================
+		// Ambil data master dari Repo A
+		// =====================================================
+
+		ppdItems := make([]internal.PpdItem, 0)
+		klhsItems := make([]internal.IsuItem, 0)
+		globalItems := make([]internal.IsuItem, 0)
+		nasionalItems := make([]internal.IsuItem, 0)
+		regionalItems := make([]internal.IsuItem, 0)
+
+		if len(ppdIDs) > 0 {
+			ppdItems, err = service.PerencanaanClient.GetPotensiPerangkatDaerah(
+				ctxWithTimeout,
+				ppdIDs,
+			)
+			if err != nil {
+				return nil, fmt.Errorf("gagal mengambil data PPD: %w", err)
+			}
+		}
+
+		if len(klhsIDs) > 0 {
+			klhsItems, err = service.PerencanaanClient.GetIsuKlhs(
+				ctxWithTimeout,
+				klhsIDs,
+			)
+			if err != nil {
+				return nil, fmt.Errorf("gagal mengambil data isu KLHS: %w", err)
+			}
+		}
+
+		if len(globalIDs) > 0 {
+			globalItems, err = service.PerencanaanClient.GetIsuGlobal(
+				ctxWithTimeout,
+				globalIDs,
+			)
+			if err != nil {
+				return nil, fmt.Errorf("gagal mengambil data isu global: %w", err)
+			}
+		}
+
+		if len(nasionalIDs) > 0 {
+			nasionalItems, err = service.PerencanaanClient.GetIsuNasional(
+				ctxWithTimeout,
+				nasionalIDs,
+			)
+			if err != nil {
+				return nil, fmt.Errorf("gagal mengambil data isu nasional: %w", err)
+			}
+		}
+
+		if len(regionalIDs) > 0 {
+			regionalItems, err = service.PerencanaanClient.GetIsuRegional(
+				ctxWithTimeout,
+				regionalIDs,
+			)
+			if err != nil {
+				return nil, fmt.Errorf("gagal mengambil data isu regional: %w", err)
+			}
+		}
+
+		// =====================================================
+		// Buat map berdasarkan ID
+		// =====================================================
+
+		ppdMap := make(map[int]internal.PpdItem)
+		for _, item := range ppdItems {
+			ppdMap[item.Id] = item
+		}
+
+		klhsMap := make(map[int]internal.IsuItem)
+		for _, item := range klhsItems {
+			klhsMap[item.Id] = item
+		}
+
+		globalMap := make(map[int]internal.IsuItem)
+		for _, item := range globalItems {
+			globalMap[item.Id] = item
+		}
+
+		nasionalMap := make(map[int]internal.IsuItem)
+		for _, item := range nasionalItems {
+			nasionalMap[item.Id] = item
+		}
+
+		regionalMap := make(map[int]internal.IsuItem)
+		for _, item := range regionalItems {
+			regionalMap[item.Id] = item
+		}
+
+		// =====================================================
+		// Masukkan text dari Repo A ke data Repo B
+		// =====================================================
+
+		for i := range result {
+
+			// PPD
+			if result[i].IdPpd != nil {
+				if ppd, ok := ppdMap[*result[i].IdPpd]; ok {
+					result[i].PotensiPerangkatDaerah = ppd.Potensi
+				} else {
+					// ID sudah tidak ada di Repo A
+					result[i].IdPpd = nil
+					result[i].PotensiPerangkatDaerah = ""
+				}
+			}
+
+			// KLHS
+			if result[i].IdIsuKlhs != nil {
+				if isu, ok := klhsMap[*result[i].IdIsuKlhs]; ok {
+					result[i].IsuKlhs = isu.Isu
+				} else {
+					result[i].IdIsuKlhs = nil
+					result[i].IsuKlhs = ""
+				}
+			}
+
+			// GLOBAL
+			if result[i].IdIsuGlobal != nil {
+				if isu, ok := globalMap[*result[i].IdIsuGlobal]; ok {
+					result[i].IsuGlobal = isu.Isu
+				} else {
+					result[i].IdIsuGlobal = nil
+					result[i].IsuGlobal = ""
+				}
+			}
+
+			// NASIONAL
+			if result[i].IdIsuNasional != nil {
+				if isu, ok := nasionalMap[*result[i].IdIsuNasional]; ok {
+					result[i].IsuNasional = isu.Isu
+				} else {
+					result[i].IdIsuNasional = nil
+					result[i].IsuNasional = ""
+				}
+			}
+
+			// REGIONAL
+			if result[i].IdIsuRegional != nil {
+				if isu, ok := regionalMap[*result[i].IdIsuRegional]; ok {
+					result[i].IsuRegional = isu.Isu
+				} else {
+					result[i].IdIsuRegional = nil
+					result[i].IsuRegional = ""
+				}
+			}
+		}
 
 		// Konversi ke response dengan tahun sekarang
 		isuStrategiss = helper.ToIsuStrategisKebelakangResponses(result, tahun)
