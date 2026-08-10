@@ -7,21 +7,26 @@ import (
 
 func ToIsuStrategisResponse(isuStrategis domain.IsuStrategis) web.IsuStrategisResponse {
 	return web.IsuStrategisResponse{
-		Id:               isuStrategis.Id,
-		KodeOpd:          isuStrategis.KodeOpd,
-		NamaOpd:          isuStrategis.NamaOpd,
-		KodeBidangUrusan: isuStrategis.KodeBidangUrusan,
-		NamaBidangUrusan: isuStrategis.NamaBidangUrusan,
-		TahunAwal:        isuStrategis.TahunAwal,
-		TahunAkhir:       isuStrategis.TahunAkhir,
+		Id:               		  isuStrategis.Id,
+		KodeOpd:          		  isuStrategis.KodeOpd,
+		NamaOpd:          		  isuStrategis.NamaOpd,
+		KodeBidangUrusan: 	      isuStrategis.KodeBidangUrusan,
+		NamaBidangUrusan: 		  isuStrategis.NamaBidangUrusan,
+		TahunAwal:        		  isuStrategis.TahunAwal,
+		TahunAkhir:       		  isuStrategis.TahunAkhir,
+		IdPpd:            		  isuStrategis.IdPpd,
+		IdIsuKlhs:        		  isuStrategis.IdIsuKlhs,
+		IdIsuGlobal:      		  isuStrategis.IdIsuGlobal,
+		IdIsuNasional:    		  isuStrategis.IdIsuNasional,
+		IdIsuRegional:    		  isuStrategis.IdIsuRegional,
 		PotensiPerangkatDaerah:   isuStrategis.PotensiPerangkatDaerah,
 		IsuKlhs:                  isuStrategis.IsuKlhs,
 		IsuGlobal:                isuStrategis.IsuGlobal,
 		IsuNasional:              isuStrategis.IsuNasional,
 		IsuRegional:              isuStrategis.IsuRegional,
-		IsuStrategis:     isuStrategis.IsuStrategis,
-		CreatedAt:        isuStrategis.CreatedAt,
-		PermasalahanOpd:  ToPermasalahanResponses(isuStrategis.PermasalahanOpd),
+		IsuStrategis:     		  isuStrategis.IsuStrategis,
+		CreatedAt:        		  isuStrategis.CreatedAt,
+		PermasalahanOpd:  		  ToPermasalahanResponses(isuStrategis.PermasalahanOpd),
 	}
 }
 
@@ -113,21 +118,26 @@ func ToJumlahDataResponses(jumlahDatas []domain.JumlahData) []web.JumlahDataResp
 
 func ToIsuStrategisKebelakangResponse(isuStrategis domain.IsuStrategis, tahunSekarang string) web.IsuStrategisKebelakangResponse {
 	return web.IsuStrategisKebelakangResponse{
-		Id:               isuStrategis.Id,
-		KodeOpd:          isuStrategis.KodeOpd,
-		NamaOpd:          isuStrategis.NamaOpd,
-		KodeBidangUrusan: isuStrategis.KodeBidangUrusan,
-		NamaBidangUrusan: isuStrategis.NamaBidangUrusan,
-		TahunAwal:        isuStrategis.TahunAwal,
-		TahunAkhir:       isuStrategis.TahunAkhir,
+		Id:               		  isuStrategis.Id,
+		KodeOpd:          		  isuStrategis.KodeOpd,
+		NamaOpd:          		  isuStrategis.NamaOpd,
+		KodeBidangUrusan: 		  isuStrategis.KodeBidangUrusan,
+		NamaBidangUrusan: 		  isuStrategis.NamaBidangUrusan,
+		TahunAwal:        		  isuStrategis.TahunAwal,
+		TahunAkhir:       		  isuStrategis.TahunAkhir,
+		IdPpd:            		  isuStrategis.IdPpd,
+		IdIsuKlhs:        		  isuStrategis.IdIsuKlhs,
+		IdIsuGlobal:      		  isuStrategis.IdIsuGlobal,
+		IdIsuNasional:    		  isuStrategis.IdIsuNasional,
+		IdIsuRegional:    		  isuStrategis.IdIsuRegional,
 		PotensiPerangkatDaerah:   isuStrategis.PotensiPerangkatDaerah,
 		IsuKlhs:                  isuStrategis.IsuKlhs,
 		IsuGlobal:                isuStrategis.IsuGlobal,
 		IsuNasional:              isuStrategis.IsuNasional,
 		IsuRegional:              isuStrategis.IsuRegional,
-		IsuStrategis:     isuStrategis.IsuStrategis,
-		CreatedAt:        isuStrategis.CreatedAt,
-		PermasalahanOpd:  ToPermasalahanKebelakangResponses(isuStrategis.PermasalahanOpd, tahunSekarang),
+		IsuStrategis:     		  isuStrategis.IsuStrategis,
+		CreatedAt:        		  isuStrategis.CreatedAt,
+		PermasalahanOpd:  		  ToPermasalahanKebelakangResponses(isuStrategis.PermasalahanOpd, tahunSekarang),
 	}
 }
 
